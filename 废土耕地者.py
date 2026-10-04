@@ -57,10 +57,11 @@ COLOR_WHITE    = (255, 255, 255)
 COLOR_BUTTON   = (70, 74, 82)    # 按钮
 COLOR_BUTTON_H = (95, 100, 110)  # 按钮悬停
 
-# --- 战场网格：5 行 × 9 列 ---
+# --- 战场网格：5 行 × 12 列 ---
 # 顶部保留 HUD 区（能量/波次），底部保留卡牌槽位区。
 GRID_ROWS = 5
 GRID_COLS = 12
+BASE_HP = 1000          # 基地生命：怪物走到最左先扣血，归零才失守
 HUD_HEIGHT      = 60   # 顶部信息条高度
 CARD_BAR_HEIGHT = 110  # 底部卡牌槽位高度
 GRID_TOP = HUD_HEIGHT
@@ -294,7 +295,7 @@ MONSTERS = [
          hp=260, speed=0.6, atk=30, atk_iv=60, color=(60, 55, 50), defense=2),
     dict(uid="m_child",  name="尘窟窜童",   desc="瘦小迅捷的变异孩童。夯骨巨汉血量过半时会从沙土裂缝钻出，冲到前排偷袭。",
          hp=140, speed=0.9, atk=22, atk_iv=60, color=(110, 100, 90), w=24, h=32),
-    dict(uid="m_dog",    name="变异犬",     desc="体型极小的变异禽类，批量刷新；受击会短暂爆发加速冲刺，分散多路骚扰。",
+    dict(uid="m_dog",    name="变异犬",     desc="体型极小的变异犬，批量刷新；受击会短暂爆发加速冲刺，分散多路骚扰。",
          hp=80, speed=1.5, atk=15, atk_iv=60, color=(90, 60, 45), w=18, h=22, hit_boost=True),
     dict(uid="m_shield", name="混凝土盾手", desc="铁丝捆着混凝土墙块当盾。混凝土只挡正面直线攻击，侧面/斜向可直击本体；盾碎后变拾荒者。",
          hp=300, speed=0.6, atk=30, atk_iv=60, color=(70, 66, 58),
@@ -358,12 +359,18 @@ MONSTERS = [
 #         【能源机制】能量不随时间自动增长：必须靠里昂产出能源球，鼠标移到球上拾取；
 #         里昂大招也会直接产出能源。
 #         波内怪物间隔由战斗场景统一控制：每波第一只开局10秒后出现，
-#         之后每只随机间隔3~10秒，难度越高间隔越短（出怪频率越快，总量不变）。
+#         之后每只随机间隔3~10秒，难度越高间隔越短。
+#         【出怪数量】简单难度按本表名单出怪。普通难度波次翻倍；
+#         困难难度波次翻倍且每波名单×3。无尽模式用自己的递增公式。
 #         （旧字段 spawn_gap 已不使用，仅保留兼容）
+#         lanes：限定出怪行（从 0 起）。教学关只用中间三行，方便三张卡守住。
+#         elite_hp / elite_spd：本关「精英血脉」的血量、移速倍率。
 #         【后续新增关卡】在 LEVELS 里加一个条目即可。
 LEVELS = [
-    # 第1关：教学关，拾荒者 + 变异犬
+    # 第1关：教学关，拾荒者 + 变异犬，只走中间三行
     dict(level=1, name="第1关 · 初见废土", start_energy=200,
+         lanes=[1, 2, 3],
+         rule_desc="教学：怪物只从高亮的中间三行进攻，漏过去会扣基地血",
          waves=[
              dict(spawn=["m_walker","m_walker","m_walker"], spawn_gap=60, wave_gap=120),
              dict(spawn=["m_walker","m_dog","m_dog","m_walker"], spawn_gap=50, wave_gap=150),
@@ -424,7 +431,8 @@ LEVELS = [
          ]),
     # 第9关：装甲要塞——数千血强怪登场（装甲巨像/废土暴君/尸巢母体），精英血脉强化
     dict(level=9, name="第9关 · 装甲要塞", start_energy=450,
-         rules=["精英血脉"], rule_desc="精英血脉：本关怪物血量×2、移速×0.85；数千血的装甲巨像与暴君压境",
+         rules=["精英血脉"], elite_hp=2.0, elite_spd=0.85,
+         rule_desc="精英血脉：本关怪物血量×2、移速×0.85；数千血的装甲巨像与暴君压境",
          waves=[
              dict(spawn=["m_colossus","m_walker","m_walker","m_shield","m_shield"], spawn_gap=60, wave_gap=160),
              dict(spawn=["m_tyrant","m_queen","m_wolf","m_frost","m_tank"], spawn_gap=50, wave_gap=160),
@@ -432,7 +440,8 @@ LEVELS = [
          ]),
     # 第10关：利维坦之渊——巨型辐射利维坦横跨所有战线，配合暴君与母体
     dict(level=10, name="第10关 · 利维坦之渊", start_energy=500,
-         rules=["辐射潮汐", "精英血脉"], rule_desc="辐射潮汐 + 精英血脉：怪物持续回血且血量×2；利维坦巨兽压阵",
+         rules=["辐射潮汐", "精英血脉"], elite_hp=2.0, elite_spd=1.0,
+         rule_desc="辐射潮汐 + 精英血脉：怪物持续回血且血量×2；利维坦巨兽压阵",
          waves=[
              dict(spawn=["m_leviathan","m_colossus","m_walker","m_walker"], spawn_gap=65, wave_gap=170),
              dict(spawn=["m_queen","m_tyrant","m_colossus","m_frost","m_spitter"], spawn_gap=50, wave_gap=170),
@@ -451,9 +460,9 @@ TEST_LEVEL = dict(level=0, name="测试关 · 末日终结者", start_energy=500
 # ============================================================================
 # 【说明】Game 对象在程序启动时创建，贯穿所有场景，保存玩家设置、
 #         当前关卡、选好的卡牌等。任何场景都能通过 game.xxx 读取/修改。
-# 【难度配置】倍率基准 = 简单（当前数值）：出怪频率×1、怪物血量×1。
-#   普通 = 出怪频率×2（间隔缩短一半）、怪物血量×2；困难 = 出怪频率×5、怪物血量×2。
-#   注意：难度只加快单位时间出怪频率（总数不变），不出怪量×倍率复制。
+# 【难度配置】倍率基准 = 简单：出怪频率×1、怪物血量×1、按关卡表出怪。
+#   普通 = 出怪频率×2、怪物血量×2、波次翻倍。
+#   困难 = 出怪频率×5、怪物血量×2、波次翻倍且每波名单×3。
 DIFF_CONFIG = {
     "简单": dict(spawn_mult=1, hp_mult=1.0),
     "普通": dict(spawn_mult=2, hp_mult=2.0),
@@ -552,7 +561,7 @@ class Button:
         self.rect = pygame.Rect(x, y, w, h)
         self.text = text
         self.callback = callback
-        self.font = font if font else pygame.font.SysFont("simhei", 22)
+        self.font = font if font else make_font(22)
         self.hover = False
 
     def handle_event(self, event):
@@ -572,13 +581,86 @@ class Button:
                           self.rect.centery - img.get_height()//2))
 
 _FONT_CACHE = {}                     # 字体缓存：按 size 缓存 Font 对象，避免每帧重复创建
+_CJK_FONT_PATH = None
+_CJK_FONT_TRIED = False
+_TEXT_CACHE = {}                     # 已渲染文字：内容不变时直接复用 Surface
+_TINT_CACHE = {}                     # 纯色半透明块：同样尺寸和颜色只建一次
+_PANEL_CACHE = {}                    # 悬停面板：同一组文字不重复拼 Surface
+
+def _resolve_cjk_font():
+    """优先黑体；没有时依次找系统里的中文字体，避免中文变成方框。"""
+    pygame.font.init()
+    for name in ("simhei", "microsoftyahei", "microsoft yahei",
+                 "wenquanyi micro hei", "wqy-microhei", "noto sans cjk sc",
+                 "source han sans sc", "droid sans fallback"):
+        path = pygame.font.match_font(name)
+        if path:
+            return path
+    return None
+
 def make_font(size):
     """快捷创建中文字体（带全局缓存，避免每帧重复创建 Font 对象——性能关键）。"""
+    global _CJK_FONT_PATH, _CJK_FONT_TRIED
     f = _FONT_CACHE.get(size)
     if f is None:
-        f = pygame.font.SysFont("simhei", size)
+        if not _CJK_FONT_TRIED:
+            _CJK_FONT_TRIED = True
+            _CJK_FONT_PATH = _resolve_cjk_font()
+        if _CJK_FONT_PATH:
+            f = pygame.font.Font(_CJK_FONT_PATH, size)
+        else:
+            f = pygame.font.SysFont("simhei", size)
         _FONT_CACHE[size] = f
     return f
+
+def render_text(size, text, color):
+    """渲染文字并缓存。HUD、名字、血量数字内容不变时不再调用 Font.render。"""
+    key = (size, text, color)
+    img = _TEXT_CACHE.get(key)
+    if img is None:
+        if len(_TEXT_CACHE) > 512:
+            _TEXT_CACHE.clear()
+        img = make_font(size).render(text, True, color)
+        _TEXT_CACHE[key] = img
+    return img
+
+def tint_surface(w, h, rgba):
+    """同尺寸、同颜色的半透明块复用一张 Surface。"""
+    key = (int(w), int(h), rgba)
+    surf = _TINT_CACHE.get(key)
+    if surf is None:
+        if len(_TINT_CACHE) > 64:
+            _TINT_CACHE.clear()
+        surf = pygame.Surface(key[:2], pygame.SRCALPHA)
+        surf.fill(rgba)
+        _TINT_CACHE[key] = surf
+    return surf
+
+def index_monsters_by_row(monsters):
+    """按行分桶。巨型怪横跨全部行，按出场顺序插进每一行，寻敌顺序与全表扫描一致。"""
+    buckets = [[] for _ in range(GRID_ROWS)]
+    for m in monsters:
+        if getattr(m, "giant", False):
+            for bucket in buckets:
+                bucket.append(m)
+        else:
+            row = int((m.y - GRID_TOP) / CELL_H)
+            if row < 0:
+                row = 0
+            elif row >= GRID_ROWS:
+                row = GRID_ROWS - 1
+            buckets[row].append(m)
+    return buckets
+
+def monsters_for_y(ctx, y):
+    """射手和子弹只看同一行（加上横跨全场的巨型怪）。没有分桶时退回全表。"""
+    buckets = ctx.get("row_buckets")
+    if not buckets:
+        return ctx["monsters"]
+    row = int((y - GRID_TOP) / CELL_H)
+    if row < 0 or row >= GRID_ROWS:
+        return ctx["monsters"]
+    return buckets[row]
 
 def draw_first_col_x(screen, x, y):
     """在最右列（第一格，禁止部署的怪物出生区）格子上画一个灰色叉叉，提示玩家不能种。"""
@@ -592,22 +674,34 @@ def draw_hover_panel(screen, cx, cy, title, items,
                      item_bg=(15, 25, 35), item_border=(90, 150, 210)):
     """绘制悬停信息面板（角色增益 / 怪物减益共用，减少重复代码）：
        居中于 (cx, cy) 上方先画一条半透明标题标签，再向下逐行排列多个小标签。
-       items: [(文字, 渲染颜色)]，颜色即小标签文字色。"""
-    nm = make_font(16).render(title, True, COLOR_WHITE)
-    tag = pygame.Surface((nm.get_width() + 16, 24), pygame.SRCALPHA)
-    tag.fill((15, 18, 22, 210))
-    pygame.draw.rect(tag, title_border, tag.get_rect(), 1, border_radius=4)
-    screen.blit(tag, (cx - nm.get_width() // 2 - 8, cy - 58))
-    screen.blit(nm, (cx - nm.get_width() // 2, cy - 55))
-    yy = cy - 58 + 28
-    for itxt, icol in items:
-        gt = make_font(14).render(itxt, True, icol)
-        gtag = pygame.Surface((gt.get_width() + 12, 20), pygame.SRCALPHA)
-        gtag.fill((*item_bg, 200))
-        pygame.draw.rect(gtag, item_border, gtag.get_rect(), 1, border_radius=3)
-        screen.blit(gtag, (cx - gt.get_width() // 2 - 6, yy))
-        screen.blit(gt, (cx - gt.get_width() // 2, yy + 2))
-        yy += 22
+       items: [(文字, 渲染颜色)]，颜色即小标签文字色。同一组文字复用一张面板。"""
+    key = (title, tuple(items), title_border, item_bg, item_border)
+    surf = _PANEL_CACHE.get(key)
+    if surf is None:
+        if len(_PANEL_CACHE) > 48:
+            _PANEL_CACHE.clear()
+        nm = render_text(16, title, COLOR_WHITE)
+        rows = [render_text(14, itxt, icol) for itxt, icol in items]
+        width = nm.get_width() + 16
+        for gt in rows:
+            width = max(width, gt.get_width() + 12)
+        height = 28 + len(rows) * 22
+        surf = pygame.Surface((max(width, 1), max(height, 24)), pygame.SRCALPHA)
+        tag = pygame.Surface((nm.get_width() + 16, 24), pygame.SRCALPHA)
+        tag.fill((15, 18, 22, 210))
+        pygame.draw.rect(tag, title_border, tag.get_rect(), 1, border_radius=4)
+        surf.blit(tag, ((surf.get_width() - tag.get_width()) // 2, 0))
+        surf.blit(nm, ((surf.get_width() - nm.get_width()) // 2, 3))
+        yy = 28
+        for gt in rows:
+            gtag = pygame.Surface((gt.get_width() + 12, 20), pygame.SRCALPHA)
+            gtag.fill((*item_bg, 200))
+            pygame.draw.rect(gtag, item_border, gtag.get_rect(), 1, border_radius=3)
+            surf.blit(gtag, ((surf.get_width() - gtag.get_width()) // 2, yy))
+            surf.blit(gt, ((surf.get_width() - gt.get_width()) // 2, yy + 2))
+            yy += 22
+        _PANEL_CACHE[key] = surf
+    screen.blit(surf, (cx - surf.get_width() // 2, cy - 58))
 
 # ============================================================================
 # 六.5 伤害结算系统（完整伤害公式）
@@ -1775,7 +1869,7 @@ class Defender:
         # 远程单位：找同行前方怪物发射子弹（巨型怪横跨全部行可被任意行打）
         if self.behavior == "shooter" and self.attack:
             target = None
-            for m in ctx["monsters"]:
+            for m in monsters_for_y(ctx, self.y):
                 if not getattr(m, "spawn_protect", False) and \
                    (m.giant or abs(m.y - self.y) < 45) and m.x + (66 if m.giant else 0) > self.x:
                     target = m
@@ -2239,6 +2333,10 @@ class Defender:
             rate = self.hp / self.maxhp
             pygame.draw.rect(screen, (80, 80, 80), (self.x - 20, self.y - 34, 40, 5))
             pygame.draw.rect(screen, COLOR_GREEN, (self.x - 20, self.y - 34, 40 * max(rate, 0), 5))
+        # 常驻短名字：色块挤在一起时不用靠悬停才能分辨是谁
+        if not getattr(self, "icon_mode", False) and not getattr(self, "hide_label", False):
+            label = render_text(13, self.name, COLOR_TEXT)
+            screen.blit(label, (self.x - label.get_width() // 2, self.y + 24))
 
     def _draw_leon(self, screen):
         if self.is_sp:
@@ -2401,8 +2499,7 @@ class Defender:
         # 诺瓦：深蓝工装连体裤 + 黄色雨靴 + 荧光涂鸦电锯（切割时锯条发光）
         # 大招（锯刃风暴）特效：前方4格高亮 + 旋转大圆锯沿路径推进
         if self.ult_remain > 0:
-            ov = pygame.Surface((int(5.0 * CELL_W), 70), pygame.SRCALPHA)
-            ov.fill((150, 220, 255, 30))
+            ov = tint_surface(int(5.0 * CELL_W), 70, (150, 220, 255, 30))
             screen.blit(ov, (int(self.x - CELL_W * 0.5), self.y - 35))
             prog = 5 - self.ult_remain          # 0→4：圆锯随段数推进
             sawx = self.x + CELL_W * 0.8 + prog * (CELL_W * 0.8)
@@ -2418,8 +2515,7 @@ class Defender:
         elif self.swing_timer > 0:
             sx0 = int(self.x - CELL_W // 2)                     # 自身格左边界
             sw0 = int((self.melee_range + 1) * CELL_W)          # 自身格+前方3格（共4格宽）
-            ov = pygame.Surface((sw0, 62), pygame.SRCALPHA)
-            ov.fill((255, 200, 80, 36))
+            ov = tint_surface(sw0, 62, (255, 200, 80, 36))
             screen.blit(ov, (sx0, self.y - 31))
             off = int((self.core_light * 3) % 34)
             for i in range(-34, sw0, 17):
@@ -3337,7 +3433,7 @@ class Monster:
             else:
                 self.x -= spd
             if self.x < 20:
-                ctx["scene"].game_over = True
+                self._hit_base(ctx)
             return
         # 击退状态（卡斯珀暗潮漩涡）：缓慢向后推，期间不前进/不攻击
         if self.kb_x is not None:
@@ -3431,12 +3527,36 @@ class Monster:
                 self.x -= self.jump_dist
                 self.jump_timer = self.jump_cd
                 ctx["scene"].fx.append(FloatingText(self.x, self.y - 30, "跳跃突袭！", (210, 210, 220), 12))
-        # 走到最左：基地失守
+        # 走到最左：撞击基地并消失。基地血量归零才失守。
         if self.x < 20:
-            ctx["scene"].game_over = True
-            if getattr(ctx["scene"], "endless", False):
-                # 无尽模式一局失败：清除存档，下次进入将从第1关重新开始
-                ctx["scene"].game.clear_endless_snapshot()
+            self._hit_base(ctx)
+
+    def _draw_field_label(self, screen):
+        """战场上常驻怪物短名。生成保护的半透明重绘和图鉴大图不画。"""
+        if getattr(self, "hide_label", False) or getattr(self, "_proto_render", False):
+            return
+        if getattr(self, "giant", False):
+            return
+        img = render_text(12, self.name, (230, 230, 235))
+        screen.blit(img, (self.x + self.w // 2 - img.get_width() // 2, self.y - 54))
+
+    def _hit_base(self, ctx):
+        """漏到最左侧：按剩余生命扣基地血，然后离场。沙盒没有基地，留给场景自己清掉。"""
+        scene = ctx["scene"]
+        if getattr(scene, "sandbox", False) or not hasattr(scene, "base_hp"):
+            return
+        if getattr(self, "breached", False):
+            return
+        self.breached = True
+        dmg = max(1, int(self.hp))
+        scene.base_hp = max(0, scene.base_hp - dmg)
+        if hasattr(scene, "fx"):
+            scene.fx.append(FloatingText(48, self.y, f"-{dmg}", COLOR_RED, 16))
+        self.hp = 0
+        if scene.base_hp <= 0:
+            scene.game_over = True
+            if getattr(scene, "endless", False):
+                scene.game.clear_endless_snapshot()
 
     def resist_of(self, element):
         """按元素取抗性：支持统一抗性（float）或按元素细分（dict）；
@@ -3613,6 +3733,7 @@ class Monster:
             self._proto_render = False
             surf.set_alpha(150)
             screen.blit(surf, (self.x - CELL_W, self.y - CELL_H * 3))
+            self._draw_field_label(screen)
             return
         # 巨型怪（末日终结者）：身体横跨全部5行，单独绘制
         if self.giant:
@@ -3680,6 +3801,7 @@ class Monster:
                 self._hp_key = key
                 self._hp_img = make_font(12).render(key, True, COLOR_TEXT)
             screen.blit(self._hp_img, (self.x + self.w // 2 - self._hp_img.get_width() // 2, self.y - 40))
+            self._draw_field_label(screen)
             # 护甲条（混凝土盾/气瓶/碎片）：黄色条在血条上方
             if self.armor > 0 and self.armor_type:
                 ar = self.armor / self.armor_max
@@ -4173,6 +4295,10 @@ class GuideScene:
             ("· 鼠标对准我方单位，按【空格】释放大招（每局共 5 次机会）", False),
             ("· 烬/烬SP 没有大招；烬SP 按空格切换火/冰/毒三种形态", False),
             ("", False),
+            ("【基地】", True),
+            ("· 怪物走到最左侧会撞击基地并消失，按它剩余的生命扣除基地血", False),
+            ("· 左侧竖条是基地血量，归零才算失守", False),
+            ("", False),
             ("【能量】", True),
             ("· 能量由里昂等能源单位产出：能源球生成后 1 秒内自动飞向顶部能量栏自动拾取", False),
             ("· 部署每个单位都会消耗能量，能量不足时无法放置", False),
@@ -4423,6 +4549,7 @@ class CodexScene:
         if self.tab == "unit":
             try:
                 dd = Defender(d["uid"], cx, cy)
+                dd.hide_label = True
                 dd.draw(screen)
             except Exception:
                 pass
@@ -4442,6 +4569,7 @@ class CodexScene:
             else:
                 mm = Monster(d["uid"], 0)
                 mm.x, mm.y = cx, cy
+                mm.hide_label = True
                 mm.draw(screen)
         # 形象标签（区分SP/护甲怪）
         tag = ""
@@ -4619,7 +4747,7 @@ class CardSelectScene:
                 u = self.slots[i]
                 # 槽位显示角色完整 Q 版形象（名字用全名，SP 形态与普通形态区分开）
                 draw_unit_icon(screen, u, slot.centerx, slot.centery - 10, (40, 52))
-                nm = make_font(13).render(u["name"], True, COLOR_TEXT)
+                nm = render_text(13, u["name"], COLOR_TEXT)
                 screen.blit(nm, (slot.x + 6, slot.y + 50))
         cnt = make_font(18).render(f"已选 {len(self.slots)}/10", True, COLOR_GOLD)
         screen.blit(cnt, (80, 390))
@@ -4664,6 +4792,7 @@ class SandboxScene:
         self.hoe = False                   # 移除模式（休憩令）
         self.sel_kind = "unit"             # 当前选中类型："unit" / "monster"
         self.sel_uid = UNITS[0]["uid"]
+        self.row_buckets = None
         # 上下选卡面板的横向滚动偏移（卡多放不下时用滚轮滚动选择）
         self.mon_scroll = 0
         self.unit_scroll = 0
@@ -4709,7 +4838,8 @@ class SandboxScene:
     def ctx(self):
         """供实体访问的共享运行数据字典（与战斗场景结构一致）。"""
         return dict(scene=self, defenders=self.defenders, monsters=self.monsters,
-                    bullets=self.bullets, orbs=self.orbs, firezones=self.firezones)
+                    bullets=self.bullets, orbs=self.orbs, firezones=self.firezones,
+                    row_buckets=self.row_buckets)
 
     def handle_event(self, event):
         self.back.handle_event(event)
@@ -4861,6 +4991,7 @@ class SandboxScene:
         for _d in self.defenders:
             _d._in_ell_rings = 0
         # 我方单位行动（攻击/产出/大招连发等）
+        self.row_buckets = index_monsters_by_row(self.monsters)
         for d in self.defenders:
             d.update(self.ctx(), mouse)
         # 埃利奥特光环叠加汇总：按本帧覆盖光环数累加攻加
@@ -4871,13 +5002,14 @@ class SandboxScene:
         # 怪物行动（左移/攻击单位/召唤等）
         for m in self.monsters:
             m.update(self.ctx())
-        # 子弹移动与命中（与战斗场景同逻辑）
+        # 子弹移动与命中（与战斗场景同逻辑）。怪物本帧可能换行，命中前重新分桶。
+        self.row_buckets = index_monsters_by_row(self.monsters)
         for b in self.bullets[:]:
             b.update()
             if b.x > SCREEN_WIDTH:
                 self.bullets.remove(b)
                 continue
-            for m in self.monsters[:]:
+            for m in monsters_for_y(self.ctx(), b.y):
                 hit = (m.x <= b.x <= m.x + 66) if m.giant else (abs(b.x - m.x) < (100 if getattr(b, "pierce", False) else 28) and abs(b.y - m.y) < 28)
                 # 贯穿弹（琮）：已穿透过的怪物不再重复命中（避免同一目标被反复造成伤害）
                 if getattr(b, "pierce", False) and m in b.pierce_hit:
@@ -5111,6 +5243,10 @@ class BattleScene:
                 self.card_cd[_u] = _d["cd"] * FPS
         self.game_over = False
         self.win = False
+        self.base_hp = BASE_HP
+        self.base_max = BASE_HP
+        self.row_buckets = None
+        self._spawn_copies = 1
         self.ult_charges = 5      # 每局可使用大招的次数
         self.hint = ""            # 当前操作提示（部署失败/SP升级等）
         self.hint_timer = 0       # 提示剩余帧数
@@ -5201,7 +5337,7 @@ class BattleScene:
         if self.dps_mode:
             self.dps_btn = Button(846, 12, 110, 36, "开始计时", self.toggle_dps, make_font(18))
             self.dps_reset = Button(966, 12, 96, 36, "重置", self.reset_dps, make_font(18))
-        # 进入战斗时先提示一次大招操作
+        # 进入战斗时先提示一次大招操作。教学关的出怪说明画在能量下方，不盖住波次。
         self.set_hint("操作：鼠标对准单位，按【空格】释放大招")
 
     def goto_menu(self):
@@ -5357,10 +5493,18 @@ class BattleScene:
         self.set_hint(f"已铲除 {target.name}（休憩令）")
 
     def init_waves(self):
-        """把当前关卡的所有波次压入生成队列（记录当前波/整体进度）。
-           普通关波次翻倍：测试关（末日终结者固定1只）保持不变。"""
+        """把当前关卡的波次压入生成队列。
+           简单：按关卡表。普通：波次翻倍。困难：波次翻倍且每波名单×3。
+           测试关（末日终结者）始终只出表里的那一只。"""
         is_test = any("m_end" in w["spawn"] for w in self.level["waves"])
-        self._waves = self.level["waves"] if is_test else self.level["waves"] * 2
+        repeat, copies = 1, 1
+        if not is_test:
+            if self.game.difficulty == "普通":
+                repeat = 2
+            elif self.game.difficulty == "困难":
+                repeat, copies = 2, 3
+        self._spawn_copies = copies
+        self._waves = self.level["waves"] if repeat == 1 else self.level["waves"] * repeat
         self.total_waves = len(self._waves)
         self.wave_idx = 0
         self.prepare_wave()
@@ -5368,18 +5512,42 @@ class BattleScene:
     def prepare_wave(self):
         if self.wave_idx < self.total_waves:
             wave = self._waves[self.wave_idx]
-            # 出怪规则：每波基础怪物 = 波次列表 ×3（简单模式也有群怪，方便观察溅射/范围特效）；
-            # 难度倍率不再复制总量，只加快出怪频率（见 spawn_timer 间隔除以 spawn_mult）
+            # 简单难度按名单出怪。困难难度才把每波名单复制（_spawn_copies）。
+            # 出怪频率仍由 spawn_mult 缩短间隔，不再额外复制总量。
             if any("m_end" in w["spawn"] for w in self.level["waves"]):
                 self.spawn_queue = list(wave["spawn"])     # 测试关：始终固定1只末日终结者
             else:
-                self.spawn_queue = list(wave["spawn"]) * 3
+                self.spawn_queue = list(wave["spawn"]) * self._spawn_copies
             self.wave_gap = wave["wave_gap"]
             self.spawn_timer = 10 * FPS      # 每波第一只：开局10秒后出现
             self.wave_idx += 1
 
     def get_row(self):
+        lanes = self.level.get("lanes") if self.level else None
+        if lanes:
+            return random.choice(lanes)
         return random.randint(0, GRID_ROWS - 1)
+
+    def apply_spawn_modifiers(self, m):
+        """难度血量、沙尘暴移速、精英血脉。精英倍率读关卡上的 elite_hp / elite_spd。"""
+        m.hp_mult = self.hp_mult
+        if self.hp_mult != 1.0:
+            m.maxhp = int(m.maxhp * self.hp_mult)
+            m.hp = m.maxhp
+            m.armor = int(m.armor * self.hp_mult)
+            m.armor_max = m.armor
+        if "沙尘暴" in self.rules:
+            m.spd_mult = 1.15
+        if "精英血脉" in self.rules:
+            lv = self.level or {}
+            hp_m = lv.get("elite_hp", 1.5)
+            spd_m = lv.get("elite_spd", 0.9)
+            m.maxhp = int(m.maxhp * hp_m)
+            m.hp = m.maxhp
+            m.armor = int(m.armor * hp_m)
+            m.armor_max = m.armor
+            m.spd_mult *= spd_m
+        return m
 
     def handle_event(self, event):
         self.back.handle_event(event)
@@ -5499,7 +5667,8 @@ class BattleScene:
     def ctx(self):
         """供实体访问的共享运行数据字典（scene 引用用于改能量/胜负）。"""
         return dict(scene=self, defenders=self.defenders, monsters=self.monsters,
-                    bullets=self.bullets, orbs=self.orbs, firezones=self.firezones)
+                    bullets=self.bullets, orbs=self.orbs, firezones=self.firezones,
+                    row_buckets=self.row_buckets)
 
     def update(self):
         """战斗场景更新：按 time_scale 倍速循环推进（×2 时每帧跑两遍单帧逻辑，
@@ -5533,10 +5702,7 @@ class BattleScene:
                 for _ in range(2):
                     r = self.get_row()
                     m = Monster("m_dog", r)
-                    m.hp_mult = self.hp_mult
-                    if self.hp_mult != 1.0:
-                        m.maxhp = int(m.maxhp * self.hp_mult)
-                        m.hp = m.maxhp
+                    self.apply_spawn_modifiers(m)
                     self.monsters.append(m)
                 self.fx.append(FloatingText(SCREEN_WIDTH // 2, 90, "铁雨空降！变异犬来袭", (170, 170, 180), 16))
             if "辐射潮汐" in self.rules and self.rule_timer % (20 * FPS) == 0:
@@ -5575,22 +5741,7 @@ class BattleScene:
                 if self.spawn_timer <= 0:
                     uid = self.spawn_queue.pop(0)
                     m = Monster(uid, self.get_row())
-                    m.hp_mult = self.hp_mult
-                    if m.hp_mult != 1.0:
-                        # 普通关卡：血量/护甲按难度倍率放大（简单1/普通2/困难2）
-                        m.maxhp = int(m.maxhp * m.hp_mult)
-                        m.hp = m.maxhp
-                        m.armor = int(m.armor * m.hp_mult)
-                        m.armor_max = m.armor
-                    # 关卡规则倍率：沙尘暴（移速+15%）/ 精英血脉（血量×1.5、移速×0.9）
-                    if "沙尘暴" in self.rules:
-                        m.spd_mult = 1.15
-                    if "精英血脉" in self.rules:
-                        m.maxhp = int(m.maxhp * 1.5)
-                        m.hp = m.maxhp
-                        m.armor = int(m.armor * 1.5)
-                        m.armor_max = m.armor
-                        m.spd_mult *= 0.9
+                    self.apply_spawn_modifiers(m)
                     m.spawn_protect = True                    # 生成保护：最后一格不被打，走到第二格才被攻击
                     self.monsters.append(m)
                     # 之后每3~10秒随机出一只（基础频率）；难度按 spawn_mult 缩短间隔：
@@ -5612,7 +5763,8 @@ class BattleScene:
         # 帧初清零埃利奥特光环覆盖计数（每帧重算，支持多个埃利奥特叠加）
         for _d in self.defenders:
             _d._in_ell_rings = 0
-        # 我方单位更新（产出/攻击/冷却）
+        # 我方单位更新（产出/攻击/冷却）。先按行分桶，射手只查自己这一行。
+        self.row_buckets = index_monsters_by_row(self.monsters)
         for d in self.defenders[:]:
             d.update(self.ctx(), mouse)
             if d.hp <= 0:
@@ -5637,12 +5789,13 @@ class BattleScene:
         for fz in self.firezones[:]:
             if not fz.update(self.ctx()):
                 self.firezones.remove(fz)
-        # 子弹移动与命中
+        # 子弹移动与命中。怪物本帧可能换行（嘲讽），命中前重新分桶。
+        self.row_buckets = index_monsters_by_row(self.monsters)
         for b in self.bullets[:]:
             b.update()
             if b.x > SCREEN_WIDTH:
                 self.bullets.remove(b); continue
-            for m in self.monsters[:]:
+            for m in monsters_for_y(self.ctx(), b.y):
                 # 巨型怪：命中判定看身体范围（66宽），且任意行的子弹都能打到它
                 hit = (m.x <= b.x <= m.x + 66) if m.giant else (abs(b.x - m.x) < (100 if getattr(b, "pierce", False) else 28) and abs(b.y - m.y) < 28)
                 # 贯穿弹（琮）：已穿透过的怪物不再重复命中（避免同一目标被反复造成伤害）
@@ -5775,8 +5928,26 @@ class BattleScene:
                 self.game_over = True
                 self.win = True
 
+    def _draw_base_bar(self, screen):
+        """战场最左侧竖条：基地剩余生命。漏怪扣的是这条血，不是立刻结束。"""
+        ratio = 0 if self.base_max <= 0 else max(0, self.base_hp) / self.base_max
+        bar_h = GRID_H
+        filled = int(bar_h * ratio)
+        pygame.draw.rect(screen, (50, 28, 28), (4, GRID_TOP, 8, bar_h))
+        color = COLOR_RED if ratio < 0.35 else (90, 190, 110)
+        if filled:
+            pygame.draw.rect(screen, color, (4, GRID_TOP + bar_h - filled, 8, filled))
+        label = render_text(14, f"基地 {int(self.base_hp)}", COLOR_TEXT)
+        screen.blit(label, (16, GRID_TOP + 4))
+
     def draw(self, screen):
         screen.fill(COLOR_BG)
+        # 教学关高亮出怪行，让玩家知道该把单位种在哪
+        lanes = self.level.get("lanes") if self.level else None
+        if lanes:
+            for r in lanes:
+                pygame.draw.rect(screen, (36, 46, 34),
+                                 (0, GRID_TOP + r * CELL_H, (GRID_COLS - 1) * CELL_W, CELL_H))
         # 网格
         for r in range(GRID_ROWS):
             for c in range(GRID_COLS):
@@ -5784,6 +5955,8 @@ class BattleScene:
                 pygame.draw.rect(screen, COLOR_GRID, (x, y, CELL_W, CELL_H), 1)
                 if c == GRID_COLS - 1:              # 第一格（怪物出生区）不能种：画灰叉
                     draw_first_col_x(screen, x, y)
+        if not self.dps_mode:
+            self._draw_base_bar(screen)
         # 实体（火区在最底层；能源球在单位上层，保证里昂产出的能量可见可拾取）
         for fz in self.firezones: fz.draw(screen)
         for b in self.bullets: b.draw(screen)
@@ -5878,17 +6051,19 @@ class BattleScene:
                                  item_bg=(35, 20, 18), item_border=(210, 120, 90))
                 break
 
-        # 顶部信息条
-        f = make_font(20)
-        energy_txt = f.render(f"能量：{int(self.energy)}", True, COLOR_GOLD)
+        # 顶部信息条（文字按内容缓存，数值没变就不重新渲染）
+        energy_txt = render_text(20, f"能量：{int(self.energy)}", COLOR_GOLD)
         if self.endless:
-            wave_txt = f.render(f"无尽 第{self.game.endless_stage}关 · 波次：{min(self.wave_idx, self.total_waves)}/{self.total_waves}", True, COLOR_TEXT)
+            wave_txt = render_text(20, f"无尽 第{self.game.endless_stage}关 · 波次：{min(self.wave_idx, self.total_waves)}/{self.total_waves}", COLOR_TEXT)
         else:
-            wave_txt = f.render(f"波次：{min(self.wave_idx, self.total_waves)}/{self.total_waves}", True, COLOR_TEXT)
-        ult_txt = f.render(("大招次数：无限" if (self.game.cheat or self.dps_mode) else f"大招次数：{self.ult_charges}/5"), True, COLOR_TEXT)
+            wave_txt = render_text(20, f"波次：{min(self.wave_idx, self.total_waves)}/{self.total_waves}", COLOR_TEXT)
+        ult_txt = render_text(20, ("大招次数：无限" if (self.game.cheat or self.dps_mode) else f"大招次数：{self.ult_charges}/5"), COLOR_TEXT)
         # 顶部信息条：各文字保持间距，避免重叠（1280宽下排布）
         screen.blit(energy_txt, (170, 16))
         screen.blit(ult_txt, (300, 16))
+        if lanes:
+            rule = render_text(16, "高亮三行出怪，漏到左边扣基地血", COLOR_GOLD)
+            screen.blit(rule, (170, 40))
         if self.dps_mode:
             # DPS 试炼场：中央显示计时 / 总伤害 / DPS 面板（18px紧凑排布，避免压到右侧按钮）
             sec = self.dps_frames / FPS
@@ -5904,7 +6079,7 @@ class BattleScene:
             screen.blit(wave_txt, (470, 16))
             if self.selected_card_uid:
                 d = next(u for u in UNITS if u["uid"] == self.selected_card_uid)
-                sel = f.render(f"已选：{d['name']}（点击网格放置）", True, COLOR_GREEN)
+                sel = render_text(20, f"已选：{d['name']}（点击网格放置）", COLOR_GREEN)
                 screen.blit(sel, (600, 16))
         self.back.draw(screen)
         # 加速按钮：×2 激活时金色描边高亮（DPS试炼场不显示）
@@ -5928,7 +6103,7 @@ class BattleScene:
                     pygame.draw.rect(screen, (255, 60, 60), hr, 3)
         # 操作提示（部署失败 / SP升级等）
         if self.hint:
-            h = f.render(self.hint, True, COLOR_GOLD)
+            h = render_text(20, self.hint, COLOR_GOLD)
             screen.blit(h, (SCREEN_WIDTH//2 - h.get_width()//2, 34))
 
         # 底部卡牌槽位（普通战斗10格 / DPS试炼场全部单位，整体居中）
@@ -5944,7 +6119,7 @@ class BattleScene:
                 pygame.draw.rect(screen, COLOR_PANEL, slot, border_radius=8)
                 pygame.draw.rect(screen, border, slot, 3 if selected else 2, border_radius=8)
                 draw_unit_icon(screen, u, slot.centerx, slot.centery - 10, (36, 46))
-                nm = make_font(12).render(u["name"], True, COLOR_TEXT)
+                nm = render_text(12, u["name"], COLOR_TEXT)
                 screen.blit(nm, (slot.x + 3, slot.y + 46))
                 cd = self.card_cd.get(u["uid"], 0)
                 if cd > 0:
@@ -5963,7 +6138,7 @@ class BattleScene:
                 pygame.draw.rect(screen, border, slot, 3 if selected else 2, border_radius=8)
                 # 卡槽显示角色的完整 Q 版形象（名字用全名，SP 形态与普通形态区分开）
                 draw_unit_icon(screen, u, slot.centerx, slot.centery - 10, (40, 50))
-                nm = make_font(13).render(u["name"], True, COLOR_TEXT)
+                nm = render_text(13, u["name"], COLOR_TEXT)
                 screen.blit(nm, (slot.x + 6, slot.y + 46))
                 cd = self.card_cd.get(u["uid"], 0)
                 if cd > 0:
@@ -5980,7 +6155,7 @@ class BattleScene:
             tip_txt = ("操作提示：鼠标对准单位按【空格】释放大招 · 点击卡牌再点网格放置 · "
                        "休憩令可铲除单位 · 剩余大招次数："
                        + ("无限" if (self.game.cheat or self.dps_mode) else f"{self.ult_charges}/5"))
-        tip = make_font(15).render(tip_txt, True, COLOR_TEXT_DIM)
+        tip = render_text(15, tip_txt, COLOR_TEXT_DIM)
         screen.blit(tip, (SCREEN_WIDTH//2 - tip.get_width()//2, SCREEN_HEIGHT - 22))
 
         # 结算（无尽模式：守住本关 / 防线被攻破 两种过渡；普通模式：胜利/失败）
