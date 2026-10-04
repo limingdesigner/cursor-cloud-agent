@@ -573,12 +573,15 @@ class Button:
                 self.callback()
 
     def draw(self, screen):
-        color = COLOR_BUTTON_H if self.hover else COLOR_BUTTON
-        pygame.draw.rect(screen, color, self.rect, border_radius=6)
-        pygame.draw.rect(screen, COLOR_GRID, self.rect, 2, border_radius=6)
+        fill = (78, 82, 88) if self.hover else (52, 56, 62)
+        border = COLOR_GOLD if self.hover else (96, 84, 58)
+        draw_frame(screen, self.rect, fill, border, 2, 6)
+        pygame.draw.line(screen, border,
+                         (self.rect.x + 8, self.rect.y + 3),
+                         (self.rect.right - 8, self.rect.y + 3), 2)
         img = self.font.render(self.text, True, COLOR_TEXT)
         screen.blit(img, (self.rect.centerx - img.get_width()//2,
-                          self.rect.centery - img.get_height()//2))
+                          self.rect.centery - img.get_height()//2 + 1))
 
 _FONT_CACHE = {}                     # 字体缓存：按 size 缓存 Font 对象，避免每帧重复创建
 _CJK_FONT_PATH = None
@@ -661,6 +664,89 @@ def monsters_for_y(ctx, y):
     if row < 0 or row >= GRID_ROWS:
         return ctx["monsters"]
     return buckets[row]
+
+_MENU_BACKDROP = None
+_FIELD_BACKDROP = None
+
+def menu_backdrop():
+    """菜单用的废土远景：暗底、地平线和远处废墟，不改任何界面布局。"""
+    global _MENU_BACKDROP
+    if _MENU_BACKDROP is None:
+        s = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
+        s.fill((16, 17, 20))
+        pygame.draw.rect(s, (32, 30, 26), (0, 498, SCREEN_WIDTH, 18))
+        pygame.draw.rect(s, (26, 28, 24), (0, 516, SCREEN_WIDTH, SCREEN_HEIGHT - 516))
+        for x, y, w, h in ((70, 438, 28, 60), (118, 458, 16, 40),
+                           (860, 448, 40, 50), (980, 430, 22, 68), (1088, 456, 34, 42)):
+            pygame.draw.rect(s, (30, 28, 26), (x, y, w, h))
+            pygame.draw.rect(s, (62, 50, 36), (x, y, w, 3))
+        edge = pygame.Surface((70, SCREEN_HEIGHT), pygame.SRCALPHA)
+        edge.fill((0, 0, 0, 70))
+        s.blit(edge, (0, 0))
+        s.blit(edge, (SCREEN_WIDTH - 70, 0))
+        _MENU_BACKDROP = s
+    return _MENU_BACKDROP
+
+def field_backdrop():
+    """战场地面：隔行尘土色、最右列是出生区。网格线另画，方便教学关盖高亮。"""
+    global _FIELD_BACKDROP
+    if _FIELD_BACKDROP is None:
+        s = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
+        s.fill((16, 17, 20))
+        pygame.draw.rect(s, (28, 30, 34), (0, 0, SCREEN_WIDTH, HUD_HEIGHT))
+        pygame.draw.line(s, (110, 88, 42), (0, HUD_HEIGHT - 1), (SCREEN_WIDTH, HUD_HEIGHT - 1))
+        for r in range(GRID_ROWS):
+            shade = (32, 34, 29) if r % 2 == 0 else (26, 29, 26)
+            pygame.draw.rect(s, shade, (0, GRID_TOP + r * CELL_H, SCREEN_WIDTH, CELL_H))
+        pygame.draw.rect(s, (40, 32, 28),
+                         ((GRID_COLS - 1) * CELL_W, GRID_TOP, CELL_W, GRID_H))
+        rng = random.Random(7)
+        for _ in range(16):
+            x = rng.randint(12, SCREEN_WIDTH - 12)
+            pygame.draw.line(s, (42, 38, 32), (x, GRID_TOP + 6),
+                             (x + rng.randint(-8, 8), GRID_BOTTOM - 6), 1)
+        pygame.draw.rect(s, (24, 26, 30), (0, GRID_BOTTOM, SCREEN_WIDTH, CARD_BAR_HEIGHT))
+        pygame.draw.line(s, (90, 74, 40), (0, GRID_BOTTOM), (SCREEN_WIDTH, GRID_BOTTOM))
+        _FIELD_BACKDROP = s
+    return _FIELD_BACKDROP
+
+def paint_menu(screen):
+    screen.blit(menu_backdrop(), (0, 0))
+
+def paint_field(screen):
+    screen.blit(field_backdrop(), (0, 0))
+
+def draw_frame(screen, rect, fill, border, width=2, radius=8):
+    """带一圈暗边的面板，选中时把 border 换成金色即可。"""
+    pygame.draw.rect(screen, (12, 12, 14), rect.inflate(2, 2), border_radius=radius)
+    pygame.draw.rect(screen, fill, rect, border_radius=radius)
+    pygame.draw.rect(screen, border, rect, width, border_radius=radius)
+
+def draw_title(screen, text, y, size=56):
+    """标题下加一条金线，颜色仍用原来的能源金。"""
+    img = render_text(size, text, COLOR_GOLD)
+    x = SCREEN_WIDTH // 2 - img.get_width() // 2
+    screen.blit(img, (x, y))
+    line_y = y + img.get_height() + 4
+    pygame.draw.line(screen, (120, 96, 48), (x + 8, line_y), (x + img.get_width() - 8, line_y), 2)
+    pygame.draw.circle(screen, COLOR_GOLD, (SCREEN_WIDTH // 2, line_y), 3)
+    return line_y
+
+def draw_ground_shadow(screen, x, y, w=34):
+    pygame.draw.ellipse(screen, (8, 10, 8), (int(x - w / 2), int(y), w, 8))
+
+def draw_stat_bar(screen, x, y, w, h, ratio, fill):
+    pygame.draw.rect(screen, (12, 12, 14), (x - 1, y - 1, w + 2, h + 2), border_radius=2)
+    pygame.draw.rect(screen, (36, 38, 40), (x, y, w, h), border_radius=2)
+    fw = int(w * max(0.0, min(1.0, ratio)))
+    if fw > 0:
+        pygame.draw.rect(screen, fill, (x, y, fw, h), border_radius=2)
+
+def draw_nameplate(screen, text, x, y, size=13, color=COLOR_TEXT):
+    img = render_text(size, text, color)
+    bg = tint_surface(img.get_width() + 8, img.get_height() + 2, (10, 12, 10, 168))
+    screen.blit(bg, (x - img.get_width() // 2 - 4, y))
+    screen.blit(img, (x - img.get_width() // 2, y + 1))
 
 def draw_first_col_x(screen, x, y):
     """在最右列（第一格，禁止部署的怪物出生区）格子上画一个灰色叉叉，提示玩家不能种。"""
@@ -2284,6 +2370,8 @@ class Defender:
     # ---- 绘制（普通 / SP 外观区分 + 血条）----
     def draw(self, screen):
         self.core_light = (self.core_light + 0.05) % 360
+        if not getattr(self, "icon_mode", False):
+            draw_ground_shadow(screen, self.x, self.y + 18)
         if self.behavior == "energy":
             self._draw_leon(screen)
         elif self.behavior == "shooter":
@@ -2331,12 +2419,11 @@ class Defender:
         # 血条（火元素无生命值，不显示血条；卡片图标模式也不显示）
         if self.behavior != "fire" and not getattr(self, "icon_mode", False):
             rate = self.hp / self.maxhp
-            pygame.draw.rect(screen, (80, 80, 80), (self.x - 20, self.y - 34, 40, 5))
-            pygame.draw.rect(screen, COLOR_GREEN, (self.x - 20, self.y - 34, 40 * max(rate, 0), 5))
+            bar = COLOR_RED if rate < 0.35 else COLOR_GREEN
+            draw_stat_bar(screen, self.x - 20, self.y - 36, 40, 5, rate, bar)
         # 常驻短名字：色块挤在一起时不用靠悬停才能分辨是谁
         if not getattr(self, "icon_mode", False) and not getattr(self, "hide_label", False):
-            label = render_text(13, self.name, COLOR_TEXT)
-            screen.blit(label, (self.x - label.get_width() // 2, self.y + 24))
+            draw_nameplate(screen, self.name, self.x, self.y + 24, 13, COLOR_TEXT)
 
     def _draw_leon(self, screen):
         if self.is_sp:
@@ -3537,8 +3624,7 @@ class Monster:
             return
         if getattr(self, "giant", False):
             return
-        img = render_text(12, self.name, (230, 230, 235))
-        screen.blit(img, (self.x + self.w // 2 - img.get_width() // 2, self.y - 54))
+        draw_nameplate(screen, self.name, self.x + self.w // 2, self.y - 54, 12, (230, 230, 235))
 
     def _hit_base(self, ctx):
         """漏到最左侧：按剩余生命扣基地血，然后离场。沙盒没有基地，留给场景自己清掉。"""
@@ -3720,6 +3806,8 @@ class Monster:
 
     def draw(self, screen, mini=False):
         """mini=True：面板小图标模式（不画血条/护甲/冻结框，仅画身体）。"""
+        if not mini and not getattr(self, "_proto_render", False):
+            draw_ground_shadow(screen, self.x + self.w / 2, self.y + 8, 46 if self.giant else 30)
         # 生成保护期半透明绘制：整只怪先画到临时画布，再按约55%透明度混合到屏幕，露出网格
         if self.spawn_protect and not mini and not getattr(self, "_proto_render", False):
             self._proto_render = True
@@ -3789,8 +3877,7 @@ class Monster:
         if not mini:
             # 血量条 + 血量数字（头顶显示 当前/上限）
             rate = self.hp / self.maxhp
-            pygame.draw.rect(screen, (70, 70, 70), (self.x, self.y - 28, self.w, 3))
-            pygame.draw.rect(screen, (255, 60, 60), (self.x, self.y - 28, self.w * max(rate, 0), 3))
+            draw_stat_bar(screen, self.x, self.y - 30, self.w, 4, rate, (210, 64, 58))
             if self.dummy:
                 # 沙包血量太大：显示千分位简写（如 152K），避免数字溢出格子
                 key = f"{int(self.hp / 1000)}K"
@@ -4207,15 +4294,17 @@ class LoadScene:
             self.game.scene = "menu"
 
     def draw(self, screen):
-        screen.fill(COLOR_BG)
-        title = make_font(46).render("废土耕地者", True, COLOR_GOLD)
-        sub = make_font(22).render("Sinkland Cultivator", True, COLOR_TEXT_DIM)
-        screen.blit(title, (SCREEN_WIDTH//2 - title.get_width()//2, 200))
-        screen.blit(sub, (SCREEN_WIDTH//2 - sub.get_width()//2, 260))
+        paint_menu(screen)
+        line_y = draw_title(screen, "废土耕地者", 180, 46)
+        sub = render_text(22, "Sinkland Cultivator", COLOR_TEXT_DIM)
+        screen.blit(sub, (SCREEN_WIDTH//2 - sub.get_width()//2, line_y + 12))
         # 进度条
         p = min(self.tick / LOAD_TOTAL_TICKS, 1.0)
-        pygame.draw.rect(screen, COLOR_PANEL, (200, 340, SCREEN_WIDTH - 400, 20), border_radius=10)
-        pygame.draw.rect(screen, COLOR_GOLD, (200, 340, (SCREEN_WIDTH - 400) * p, 20), border_radius=10)
+        track = pygame.Rect(200, 340, SCREEN_WIDTH - 400, 16)
+        pygame.draw.rect(screen, (18, 18, 20), track.inflate(4, 4), border_radius=8)
+        pygame.draw.rect(screen, (40, 42, 46), track, border_radius=8)
+        if p > 0:
+            pygame.draw.rect(screen, COLOR_GOLD, (200, 340, (SCREEN_WIDTH - 400) * p, 16), border_radius=8)
         tip = make_font(18).render("正在加载基地资源…", True, COLOR_TEXT_DIM)
         screen.blit(tip, (SCREEN_WIDTH//2 - tip.get_width()//2, 375))
 
@@ -4260,11 +4349,10 @@ class MenuScene:
     def update(self): pass
 
     def draw(self, screen):
-        screen.fill(COLOR_BG)
-        title = make_font(56).render("废土耕地者", True, COLOR_GOLD)
-        sub = make_font(20).render("Sinkland Cultivator", True, COLOR_TEXT_DIM)
-        screen.blit(title, (SCREEN_WIDTH//2 - title.get_width()//2, 100))
-        screen.blit(sub, (SCREEN_WIDTH//2 - sub.get_width()//2, 165))
+        paint_menu(screen)
+        line_y = draw_title(screen, "废土耕地者", 78, 56)
+        sub = render_text(20, "Sinkland Cultivator", COLOR_TEXT_DIM)
+        screen.blit(sub, (SCREEN_WIDTH//2 - sub.get_width()//2, line_y + 10))
         for b in self.btns: b.draw(screen)
 
 # ---------------------------------------------------------------
@@ -4334,7 +4422,7 @@ class GuideScene:
         pass
 
     def draw(self, screen):
-        screen.fill(COLOR_BG)
+        paint_menu(screen)
         title = make_font(38).render("操作指南", True, COLOR_GOLD)
         screen.blit(title, (SCREEN_WIDTH // 2 - title.get_width() // 2, 30))
         hint = make_font(16).render("使用鼠标滚轮上下滚动", True, COLOR_TEXT_DIM)
@@ -4392,7 +4480,7 @@ class SettingsScene:
         self.toggle_cheat.text = "测试：" + ("开" if self.game.cheat else "关")
 
     def draw(self, screen):
-        screen.fill(COLOR_BG)
+        paint_menu(screen)
         title = make_font(38).render("设置", True, COLOR_GOLD)
         screen.blit(title, (SCREEN_WIDTH//2 - title.get_width()//2, 40))
         vol = make_font(20).render(f"音量：{self.game.volume}", True, COLOR_TEXT_DIM)
@@ -4449,7 +4537,7 @@ class LevelSelectScene:
     def update(self): pass
 
     def draw(self, screen):
-        screen.fill(COLOR_BG)
+        paint_menu(screen)
         title = make_font(38).render("选择关卡", True, COLOR_GOLD)
         screen.blit(title, (SCREEN_WIDTH//2 - title.get_width()//2, 30))
         hint = make_font(17).render("所有关卡均已解锁，直接点击选择 · 关卡规则会改变战场环境", True, COLOR_TEXT_DIM)
@@ -4499,7 +4587,7 @@ class CodexScene:
     def update(self): pass
 
     def draw(self, screen):
-        screen.fill(COLOR_BG)
+        paint_menu(screen)
         title = make_font(40).render("图鉴手册", True, COLOR_GOLD)
         screen.blit(title, (SCREEN_WIDTH//2 - title.get_width()//2, 20))
         self.tab_units.draw(screen)
@@ -4682,7 +4770,7 @@ class CardSelectScene:
     def update(self): pass
 
     def draw(self, screen):
-        screen.fill(COLOR_BG)
+        paint_menu(screen)
         # 卡牌池（先画，用裁剪限制在可视区内，滚动时不会遮住标题和提示文字）
         pool_x, pool_y = 80, 110
         screen.set_clip((pool_x, self.pool_vis_top, 800, self.pool_vis_bot - self.pool_vis_top))
@@ -4691,8 +4779,7 @@ class CardSelectScene:
                                pool_y + (i // 4) * 120 - self.scroll, 180, 100)
             if card.bottom < self.pool_vis_top or card.y > self.pool_vis_bot:
                 continue
-            pygame.draw.rect(screen, COLOR_PANEL, card, border_radius=8)
-            pygame.draw.rect(screen, COLOR_GRID, card, 2, border_radius=8)
+            draw_frame(screen, card, (36, 39, 44), (78, 74, 62), 2, 8)
             n = make_font(22).render(u["name"], True, COLOR_WHITE)
             c = make_font(16).render(f"能量 {u['cost']}", True, COLOR_GOLD)
             screen.blit(n, (card.x + 10, card.y + 8))
@@ -4741,16 +4828,15 @@ class CardSelectScene:
         slot_x0 = (SCREEN_WIDTH - 920) // 2
         for i in range(10):
             slot = pygame.Rect(slot_x0 + i * 92, 440, 88, 88)
-            pygame.draw.rect(screen, COLOR_PANEL, slot, border_radius=8)
-            pygame.draw.rect(screen, COLOR_GRID, slot, 2, border_radius=8)
+            draw_frame(screen, slot, (36, 39, 44), (78, 74, 62), 2, 8)
             if i < len(self.slots):
                 u = self.slots[i]
                 # 槽位显示角色完整 Q 版形象（名字用全名，SP 形态与普通形态区分开）
                 draw_unit_icon(screen, u, slot.centerx, slot.centery - 10, (40, 52))
                 nm = render_text(13, u["name"], COLOR_TEXT)
                 screen.blit(nm, (slot.x + 6, slot.y + 50))
-        cnt = make_font(18).render(f"已选 {len(self.slots)}/10", True, COLOR_GOLD)
-        screen.blit(cnt, (80, 390))
+        cnt = render_text(18, f"已选 {len(self.slots)}/10", COLOR_GOLD)
+        screen.blit(cnt, (80, 408))
         if self.msg:
             mtxt = make_font(18).render(self.msg, True, COLOR_RED)
             screen.blit(mtxt, (SCREEN_WIDTH//2 - mtxt.get_width()//2, 520))
@@ -5107,7 +5193,7 @@ class SandboxScene:
         self.monsters = [m for m in self.monsters if (m.hp > 0 or m.dummy) and m.x > 30]
 
     def draw(self, screen):
-        screen.fill(COLOR_BG)
+        paint_field(screen)
         # 网格
         for r in range(GRID_ROWS):
             for col in range(GRID_COLS):
@@ -5150,8 +5236,8 @@ class SandboxScene:
             if rx + 84 < 6 or rx > 710:
                 continue    # 超出可见区域的不画
             sel = self.sel_kind == "monster" and self.sel_uid == u["uid"]
-            pygame.draw.rect(screen, COLOR_PANEL, (rx, 6, 84, 50), border_radius=6)
-            pygame.draw.rect(screen, COLOR_GOLD if sel else COLOR_GRID, (rx, 6, 84, 50), 2, border_radius=6)
+            draw_frame(screen, pygame.Rect(rx, 6, 84, 50), (36, 39, 44),
+                       COLOR_GOLD if sel else (78, 74, 62), 2, 6)
             pm = self.mon_previews[u["uid"]]
             pm.x = rx + 42       # 面板中心
             pm.y = 31
@@ -5168,8 +5254,8 @@ class SandboxScene:
             if rx + 88 < 6 or rx > 1018:
                 continue    # 超出可见区域的不画
             sel = self.sel_kind == "unit" and self.sel_uid == u["uid"]
-            pygame.draw.rect(screen, COLOR_PANEL, (rx, 540, 88, 92), border_radius=6)
-            pygame.draw.rect(screen, COLOR_GOLD if sel else COLOR_GRID, (rx, 540, 88, 92), 2, border_radius=6)
+            draw_frame(screen, pygame.Rect(rx, 540, 88, 92), (36, 39, 44),
+                       COLOR_GOLD if sel else (78, 74, 62), 2, 6)
             draw_unit_icon(screen, u, rx + 44, 556, (46, 56))
             nm = make_font(12).render(u["name"], True, COLOR_WHITE)
             screen.blit(nm, (rx + 4, 616))
@@ -5931,23 +6017,27 @@ class BattleScene:
     def _draw_base_bar(self, screen):
         """战场最左侧竖条：基地剩余生命。漏怪扣的是这条血，不是立刻结束。"""
         ratio = 0 if self.base_max <= 0 else max(0, self.base_hp) / self.base_max
-        bar_h = GRID_H
-        filled = int(bar_h * ratio)
-        pygame.draw.rect(screen, (50, 28, 28), (4, GRID_TOP, 8, bar_h))
-        color = COLOR_RED if ratio < 0.35 else (90, 190, 110)
+        x, y, w, h = 8, GRID_TOP + 10, 10, GRID_H - 20
+        pygame.draw.rect(screen, (18, 16, 14), (x - 4, y - 4, w + 8, h + 8), border_radius=3)
+        pygame.draw.rect(screen, (90, 74, 48), (x - 4, y - 4, w + 8, h + 8), 1, border_radius=3)
+        pygame.draw.rect(screen, (36, 24, 22), (x, y, w, h), border_radius=2)
+        filled = int(h * ratio)
+        color = COLOR_RED if ratio < 0.35 else (96, 186, 104)
         if filled:
-            pygame.draw.rect(screen, color, (4, GRID_TOP + bar_h - filled, 8, filled))
+            pygame.draw.rect(screen, color, (x, y + h - filled, w, filled), border_radius=2)
         label = render_text(14, f"基地 {int(self.base_hp)}", COLOR_TEXT)
-        screen.blit(label, (16, GRID_TOP + 4))
+        plate = tint_surface(label.get_width() + 10, label.get_height() + 4, (12, 14, 12, 190))
+        screen.blit(plate, (22, GRID_TOP + 8))
+        screen.blit(label, (27, GRID_TOP + 10))
 
     def draw(self, screen):
-        screen.fill(COLOR_BG)
+        paint_field(screen)
         # 教学关高亮出怪行，让玩家知道该把单位种在哪
         lanes = self.level.get("lanes") if self.level else None
         if lanes:
+            wash = tint_surface((GRID_COLS - 1) * CELL_W, CELL_H, (78, 104, 58, 70))
             for r in lanes:
-                pygame.draw.rect(screen, (36, 46, 34),
-                                 (0, GRID_TOP + r * CELL_H, (GRID_COLS - 1) * CELL_W, CELL_H))
+                screen.blit(wash, (0, GRID_TOP + r * CELL_H))
         # 网格
         for r in range(GRID_ROWS):
             for c in range(GRID_COLS):
@@ -6116,8 +6206,7 @@ class BattleScene:
                 slot = pygame.Rect(slot_x0 + i * sw, bar_y, sw - 4, 88)
                 selected = u["uid"] == self.selected_card_uid
                 border = COLOR_GOLD if selected else COLOR_GRID
-                pygame.draw.rect(screen, COLOR_PANEL, slot, border_radius=8)
-                pygame.draw.rect(screen, border, slot, 3 if selected else 2, border_radius=8)
+                draw_frame(screen, slot, (36, 39, 44), border, 3 if selected else 2, 8)
                 draw_unit_icon(screen, u, slot.centerx, slot.centery - 10, (36, 46))
                 nm = render_text(12, u["name"], COLOR_TEXT)
                 screen.blit(nm, (slot.x + 3, slot.y + 46))
@@ -6134,8 +6223,7 @@ class BattleScene:
                 slot = pygame.Rect(slot_x0 + i * 92, bar_y, 88, 88)
                 selected = u["uid"] == self.selected_card_uid
                 border = COLOR_GOLD if selected else COLOR_GRID
-                pygame.draw.rect(screen, COLOR_PANEL, slot, border_radius=8)
-                pygame.draw.rect(screen, border, slot, 3 if selected else 2, border_radius=8)
+                draw_frame(screen, slot, (36, 39, 44), border, 3 if selected else 2, 8)
                 # 卡槽显示角色的完整 Q 版形象（名字用全名，SP 形态与普通形态区分开）
                 draw_unit_icon(screen, u, slot.centerx, slot.centery - 10, (40, 50))
                 nm = render_text(13, u["name"], COLOR_TEXT)
