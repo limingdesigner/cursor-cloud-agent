@@ -20,6 +20,7 @@
 
 from __future__ import annotations
 
+import errno
 import json
 import os
 import struct
@@ -575,10 +576,42 @@ class Handler(BaseHTTPRequestHandler):
         self._json(404, {"error": "没有这个地址"})
 
 
+def running_flare(port: int) -> str | None:
+    url = f"http://{HOST}:{port}/"
+    try:
+        with urllib.request.urlopen(url, timeout=1.5) as resp:
+            body = resp.read(8000).decode("utf-8", errors="replace")
+    except (urllib.error.URLError, TimeoutError, OSError):
+        return None
+    if "焰口" in body and "gpt-image-2.5-flare" in body:
+        return url
+    return None
+
+
 def serve(open_browser: bool) -> None:
     OUT_DIR.mkdir(exist_ok=True)
-    httpd = ThreadingHTTPServer((HOST, PORT), Handler)
-    url = f"http://{HOST}:{PORT}/"
+    ThreadingHTTPServer.allow_reuse_address = True
+    httpd = None
+    url = ""
+    for port in range(PORT, PORT + 20):
+        try:
+            httpd = ThreadingHTTPServer((HOST, port), Handler)
+        except OSError as err:
+            if err.errno != errno.EADDRINUSE:
+                raise
+            existing = running_flare(port)
+            if existing:
+                print(f"焰口已经在运行：{existing}")
+                print("直接打开这个地址。要重开，先在原先那个终端按 Ctrl+C。")
+                if open_browser:
+                    webbrowser.open(existing)
+                return
+            continue
+        url = f"http://{HOST}:{port}/"
+        break
+    if httpd is None:
+        print(f"{PORT} 到 {PORT + 19} 都被占用了，先腾出一个端口再开。", file=sys.stderr)
+        raise SystemExit(1)
     print(f"焰口已开：{url}")
     print("参数锁定：gpt-image-2.5-flare / 1024x576 / quality=medium / response_format=url")
     if not load_key():
