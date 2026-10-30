@@ -29,7 +29,6 @@
   --ink-faint: #8d847a;
   --paper: #f3eee4;
   --paper-2: #faf6ef;
-  --paper-shade: #e4dacb;
   --line: rgba(29, 22, 18, 0.14);
   --line-strong: rgba(29, 22, 18, 0.55);
   --cinnabar: #c4452d;
@@ -517,19 +516,14 @@ legend, .eyebrow {
   outline-offset: -3px;
   z-index: 1;
 }
-.cell.is-done {
-  background: var(--paper-shade);
-  color: #9a9086;
+.cell:disabled { opacity: 1; }
+.cell.is-done,
+.cell.is-done:disabled {
+  background: var(--paper-2);
+  color: var(--ink);
   cursor: default;
-}
-.cell.is-done::after {
-  content: "";
-  position: absolute;
-  top: 12%;
-  right: 12%;
-  width: max(3px, calc(8cqi / var(--n)));
-  height: max(3px, calc(8cqi / var(--n)));
-  background: var(--cinnabar);
+  opacity: 1;
+  animation: tap 0.2s ease;
 }
 .cell.is-vanish {
   background: #ddd4c6;
@@ -616,6 +610,10 @@ legend, .eyebrow {
   25% { transform: translateX(-3px); }
   75% { transform: translateX(3px); }
 }
+@keyframes tap {
+  0% { background-color: #efe2d4; }
+  100% { background-color: var(--paper-2); }
+}
 </style>
 </head>
 <body data-view="home">
@@ -685,7 +683,7 @@ legend, .eyebrow {
             <label class="choice">
               <input type="radio" name="reveal" value="stay" checked>
               <span class="choice-name">保持可见</span>
-              <span class="choice-hint">点中后数字还在，颜色变淡。</span>
+              <span class="choice-hint">点中后保持原样，只有一下点击动效。</span>
             </label>
             <label class="choice">
               <input type="radio" name="reveal" value="vanish">
