@@ -560,6 +560,23 @@ legend, .eyebrow {
   opacity: 1;
   animation: soften 0.22s ease;
 }
+.cell.is-fade.is-settled,
+.cell.is-done.is-settled,
+.cell.is-fade.is-settled:disabled,
+.cell.is-done.is-settled:disabled {
+  animation: none;
+}
+.board.is-dealt .cell,
+.board.is-dealt .cell.is-fade,
+.board.is-dealt .cell.is-done,
+.board.is-dealt .cell.is-settled,
+.board.is-dealt .cell.is-fade.is-settled,
+.board.is-dealt .cell.is-done.is-settled,
+.board.is-dealt .cell:disabled,
+.board.is-dealt .cell.is-fade.is-settled:disabled,
+.board.is-dealt .cell.is-done.is-settled:disabled {
+  animation: deal 0.16s ease;
+}
 .cell.is-wrong,
 .cell.is-wrong:hover,
 .cell.is-wrong:active {
@@ -661,6 +678,10 @@ legend, .eyebrow {
   0% { background-color: #efe2d4; color: #1d1612; }
   100% { background-color: #e4dacb; color: #9a9086; }
 }
+@keyframes deal {
+  from { opacity: 0.25; }
+  to { opacity: 1; }
+}
 </style>
 </head>
 <body data-view="home">
@@ -679,16 +700,21 @@ legend, .eyebrow {
 
     <div class="home-grid">
       <form id="setup" autocomplete="off">
-        <section class="block" aria-labelledby="play-legend">
-          <h2 id="play-legend" class="eyebrow">玩法</h2>
-          <article class="play-card">
-            <div class="play-card-top">
-              <h3>标准方格</h3>
-              <span class="badge">使用中</span>
-            </div>
-            <p>数字随机铺在方格里。从 1 点到最后一格，必须按顺序。点错不会前进。</p>
-          </article>
-        </section>
+        <fieldset>
+          <legend>玩法</legend>
+          <div class="pair">
+            <label class="choice">
+              <input type="radio" name="play" value="classic" checked>
+              <span class="choice-name">标准方格</span>
+              <span class="choice-hint">位置不变。从 1 按顺序点到最后一格。</span>
+            </label>
+            <label class="choice">
+              <input type="radio" name="play" value="reshuffle">
+              <span class="choice-name">每点重排</span>
+              <span class="choice-hint">每点中一个，整盘方格就重新打乱。</span>
+            </label>
+          </div>
+        </fieldset>
 
         <fieldset>
           <legend>边长</legend>
@@ -847,7 +873,6 @@ legend, .eyebrow {
 <script>
 (function () {
   const STORAGE_KEY = "schulte-grid-v1";
-  const PLAY = "classic";
 
   const home = document.getElementById("home");
   const play = document.getElementById("play");
@@ -977,7 +1002,7 @@ legend, .eyebrow {
     if (size <= 3) timing = "standard";
     const reveal = data.get("reveal") === "fade" ? "fade" : "stay";
     return {
-      play: PLAY,
+      play: data.get("play") === "reshuffle" ? "reshuffle" : "classic",
       size: size,
       timing: timing,
       reveal: reveal,
@@ -991,7 +1016,7 @@ legend, .eyebrow {
 
   function parseKey(key) {
     const parts = String(key).split("|");
-    if (parts.length !== 4 || parts[0] !== PLAY) return null;
+    if (parts.length !== 4 || (parts[0] !== "classic" && parts[0] !== "reshuffle")) return null;
     const size = Number(parts[1]);
     const timing = parts[2];
     const reveal = parts[3];
@@ -999,13 +1024,14 @@ legend, .eyebrow {
     if (timing !== "standard" && timing !== "relaxed") return null;
     if (reveal !== "stay" && reveal !== "fade") return null;
     if (size <= 3 && timing === "relaxed") return null;
-    return { play: PLAY, size: size, timing: timing, reveal: reveal };
+    return { play: parts[0], size: size, timing: timing, reveal: reveal };
   }
 
   function describe(cfg) {
+    const play = cfg.play === "reshuffle" ? "每点重排" : "标准方格";
     const timing = cfg.timing === "relaxed" ? "轻松计时" : "标准计时";
     const reveal = cfg.reveal === "fade" ? "点后变淡" : "点后可见";
-    return "标准方格 · " + cfg.size + "×" + cfg.size + " · " + timing + " · " + reveal;
+    return play + " · " + cfg.size + "×" + cfg.size + " · " + timing + " · " + reveal;
   }
 
   function formatTime(ms, mode) {
@@ -1041,6 +1067,7 @@ legend, .eyebrow {
   function persistLast() {
     const cfg = currentConfig();
     db.last = {
+      play: cfg.play,
       size: cfg.size,
       timing: cfg.timing,
       reveal: cfg.reveal,
@@ -1059,6 +1086,7 @@ legend, .eyebrow {
     form.elements.size.value = String(size);
     form.elements.timing.value = timing;
     form.elements.reveal.value = reveal;
+    form.elements.play.value = last.play === "reshuffle" ? "reshuffle" : "classic";
     nickInput.value = typeof last.nickname === "string" ? last.nickname.slice(0, 16) : "";
     syncTiming();
   }
@@ -1394,7 +1422,7 @@ legend, .eyebrow {
     return values;
   }
 
-  function buildBoard(numbers) {
+  function buildBoard(numbers, just) {
     board.replaceChildren();
     board.style.setProperty("--n", String(session.config.size));
     board.setAttribute("aria-label", session.config.size + " 乘 " + session.config.size + " 的舒尔特方格");
@@ -1406,9 +1434,21 @@ legend, .eyebrow {
       btn.dataset.n = String(n);
       btn.textContent = String(n);
       btn.setAttribute("aria-label", String(n));
+      if (session.found[n]) {
+        btn.disabled = true;
+        btn.classList.add(session.config.reveal === "fade" ? "is-fade" : "is-done");
+        if (n !== just) btn.classList.add("is-settled");
+        btn.setAttribute("aria-label", "数字 " + n + "，已点过");
+      }
       frag.appendChild(btn);
     });
     board.appendChild(frag);
+  }
+
+  function showDeal() {
+    board.classList.remove("is-dealt");
+    void board.offsetWidth;
+    board.classList.add("is-dealt");
   }
 
   function startClock(now) {
@@ -1511,12 +1551,20 @@ legend, .eyebrow {
     if (session.config.timing === "standard" && !session.running) startClock(now);
     if (startedNow) startClock(now);
 
-    markDone(btn);
+    session.found[value] = true;
     session.expected += 1;
     paintProgress();
     if (session.expected > session.total) {
+      markDone(btn);
       finish(now);
       return;
+    }
+    if (session.config.play === "reshuffle") {
+      session.order = shuffle(session.total);
+      buildBoard(session.order, value);
+      showDeal();
+    } else {
+      markDone(btn);
     }
     say(startedNow ? "计时开始，下一个 " + session.expected : "下一个 " + session.expected);
     paintHud();
@@ -1532,12 +1580,15 @@ legend, .eyebrow {
       config: cfg,
       expected: 1,
       total: cfg.size * cfg.size,
+      found: {},
+      order: shuffle(cfg.size * cfg.size),
       start: 0,
       running: false,
       finished: false,
       raf: 0,
     };
-    buildBoard(shuffle(session.total));
+    board.classList.remove("is-dealt");
+    buildBoard(session.order);
     result.hidden = true;
     quitBar.hidden = true;
     quit.hidden = false;
