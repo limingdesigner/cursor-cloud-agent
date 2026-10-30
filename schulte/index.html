@@ -191,6 +191,13 @@ legend, .eyebrow {
   grid-template-columns: 1fr 1fr;
   gap: 8px;
 }
+.plays {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.plays .choice { min-height: 0; }
+.plays .choice:last-child { grid-column: 1 / -1; }
 .choice {
   position: relative;
   display: grid;
@@ -501,10 +508,17 @@ legend, .eyebrow {
   transition: width 120ms linear;
 }
 #play:focus { outline: none; }
-.board {
+.stage {
   --n: 5;
   width: min(100%, calc(100dvh - 250px), calc(var(--n) * 92px), 680px);
   margin-inline: auto;
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+}
+.board {
+  --n: 5;
+  width: 100%;
   aspect-ratio: 1;
   display: grid;
   grid-template-columns: repeat(var(--n), minmax(0, 1fr));
@@ -512,10 +526,15 @@ legend, .eyebrow {
   padding: 1px;
   background: rgba(29, 22, 18, 0.78);
   container-type: inline-size;
+  transform-origin: center center;
   user-select: none;
   -webkit-user-select: none;
   touch-action: manipulation;
 }
+.stage.is-spin .board { width: 69%; will-change: transform; }
+.stage.is-spin,
+.stage.is-spin .board,
+.stage.is-spin .cell { touch-action: none; }
 .cell {
   position: relative;
   appearance: none;
@@ -634,7 +653,7 @@ legend, .eyebrow {
   .rank-row .when, .rank-head .when { display: none; }
 }
 @media (max-width: 420px) {
-  .pair { grid-template-columns: 1fr; }
+  .pair, .plays { grid-template-columns: 1fr; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
@@ -687,7 +706,7 @@ legend, .eyebrow {
       <form id="setup" autocomplete="off">
         <fieldset>
           <legend>玩法</legend>
-          <div class="pair">
+          <div class="plays">
             <label class="choice">
               <input type="radio" name="play" value="classic" checked>
               <span class="choice-name">标准方格</span>
@@ -697,6 +716,11 @@ legend, .eyebrow {
               <input type="radio" name="play" value="reshuffle">
               <span class="choice-name">每点重排</span>
               <span class="choice-hint">每点中一个，整盘方格就重新打乱。</span>
+            </label>
+            <label class="choice">
+              <input type="radio" name="play" value="spin">
+              <span class="choice-name">匀速旋转</span>
+              <span class="choice-hint">整盘连数字一起匀速转动。快慢和方向每局随机，最慢很从容，最快够呛。</span>
             </label>
           </div>
         </fieldset>
@@ -804,7 +828,7 @@ legend, .eyebrow {
         </div>
       </aside>
 
-      <p class="foot">每种选择分开记最快成绩：玩法、边长、计时、点过之后可见或变淡。同一昵称在每种设置下保留自己的最好成绩，并按这个成绩排名。</p>
+      <p class="foot">每种选择分开记最快成绩：玩法、边长、计时、点过之后可见或变淡。匀速旋转的快慢每局随机，记录旁边会写上那一局的转速。同一昵称在每种设置下保留自己的最好成绩，并按这个成绩排名。</p>
     </div>
   </div>
 
@@ -850,7 +874,9 @@ legend, .eyebrow {
       </div>
     </div>
 
-    <div id="board" class="board" role="group" aria-label="舒尔特方格"></div>
+    <div id="stage" class="stage">
+      <div id="board" class="board" role="group" aria-label="舒尔特方格"></div>
+    </div>
     <p id="live" class="sr" aria-live="polite"></p>
   </section>
 </main>
@@ -909,6 +935,7 @@ legend, .eyebrow {
   const resultExtra = document.getElementById("result-extra");
   const again = document.getElementById("again");
   const toHome = document.getElementById("to-home");
+  const stage = document.getElementById("stage");
   const board = document.getElementById("board");
 
   const whenFormat = new Intl.DateTimeFormat("zh-CN", {
@@ -986,8 +1013,9 @@ legend, .eyebrow {
     let timing = data.get("timing") === "relaxed" ? "relaxed" : "standard";
     if (size <= 3) timing = "standard";
     const reveal = data.get("reveal") === "fade" ? "fade" : "stay";
+    const picked = data.get("play");
     return {
-      play: data.get("play") === "reshuffle" ? "reshuffle" : "classic",
+      play: picked === "reshuffle" || picked === "spin" ? picked : "classic",
       size: size,
       timing: timing,
       reveal: reveal,
@@ -1001,7 +1029,7 @@ legend, .eyebrow {
 
   function parseKey(key) {
     const parts = String(key).split("|");
-    if (parts.length !== 4 || (parts[0] !== "classic" && parts[0] !== "reshuffle")) return null;
+    if (parts.length !== 4 || (parts[0] !== "classic" && parts[0] !== "reshuffle" && parts[0] !== "spin")) return null;
     const size = Number(parts[1]);
     const timing = parts[2];
     const reveal = parts[3];
@@ -1013,10 +1041,31 @@ legend, .eyebrow {
   }
 
   function describe(cfg) {
-    const play = cfg.play === "reshuffle" ? "每点重排" : "标准方格";
+    const play = cfg.play === "reshuffle" ? "每点重排" : cfg.play === "spin" ? "匀速旋转" : "标准方格";
     const timing = cfg.timing === "relaxed" ? "轻松计时" : "标准计时";
     const reveal = cfg.reveal === "fade" ? "点后变淡" : "点后可见";
     return play + " · " + cfg.size + "×" + cfg.size + " · " + timing + " · " + reveal;
+  }
+
+  function spinPhrase(spin) {
+    if (!spin || typeof spin.dps !== "number" || !Number.isFinite(spin.dps) || spin.dps <= 0) return "";
+    const dir = spin.dir < 0 ? "逆时针" : "顺时针";
+    const period = 360 / spin.dps;
+    if (period >= 8) return dir + "，约 " + String(Math.round(period)) + " 秒一圈";
+    const rev = spin.dps / 360;
+    return dir + "，约每秒 " + (rev >= 10 ? rev.toFixed(0) : rev.toFixed(1)) + " 圈";
+  }
+
+  function withSpin(text, spin) {
+    const phrase = spinPhrase(spin);
+    return phrase ? text + " · " + phrase : text;
+  }
+
+  function rollSpin() {
+    const min = 10;
+    const max = 900;
+    const dps = min * Math.pow(max / min, Math.random());
+    return { dps: Math.round(dps * 10) / 10, dir: Math.random() < 0.5 ? -1 : 1 };
   }
 
   function formatTime(ms, mode) {
@@ -1071,7 +1120,7 @@ legend, .eyebrow {
     form.elements.size.value = String(size);
     form.elements.timing.value = timing;
     form.elements.reveal.value = reveal;
-    form.elements.play.value = last.play === "reshuffle" ? "reshuffle" : "classic";
+    form.elements.play.value = last.play === "reshuffle" || last.play === "spin" ? last.play : "classic";
     nickInput.value = typeof last.nickname === "string" ? last.nickname.slice(0, 16) : "";
     syncTiming();
   }
@@ -1087,6 +1136,7 @@ legend, .eyebrow {
         ms: rec.ms,
         at: rec.at || 0,
         runs: rec.runs || 1,
+        spin: rec.spin || null,
       });
     });
     rows.sort(function (a, b) {
@@ -1121,10 +1171,11 @@ legend, .eyebrow {
       const rec = board && board.names ? board.names[name] : null;
       const cfg = parseKey(key);
       if (!cfg || !rec || typeof rec.ms !== "number") return;
-      rows.push({ cfg: cfg, ms: rec.ms, at: rec.at || 0, runs: rec.runs || 1 });
+      rows.push({ cfg: cfg, ms: rec.ms, at: rec.at || 0, runs: rec.runs || 1, spin: rec.spin || null });
     });
     rows.sort(function (a, b) {
       return a.cfg.size - b.cfg.size
+        || (a.cfg.play < b.cfg.play ? -1 : a.cfg.play > b.cfg.play ? 1 : 0)
         || (a.cfg.timing < b.cfg.timing ? -1 : a.cfg.timing > b.cfg.timing ? 1 : 0)
         || (a.cfg.reveal < b.cfg.reveal ? -1 : a.cfg.reveal > b.cfg.reveal ? 1 : 0);
     });
@@ -1139,7 +1190,7 @@ legend, .eyebrow {
 
     if (board && board.device && typeof board.device.ms === "number") {
       const who = board.device.nickname ? board.device.nickname : "未署名";
-      chase.textContent = "本机最快 " + formatTime(board.device.ms) + " 秒 · " + who;
+      chase.textContent = withSpin("本机最快 " + formatTime(board.device.ms) + " 秒 · " + who, board.device.spin);
     } else {
       chase.textContent = "这个设置还没有最快记录。这一局会成为第一个。";
     }
@@ -1171,7 +1222,7 @@ legend, .eyebrow {
     unit.textContent = "秒";
     deviceTime.append(strong, unit);
     const who = board.device.nickname ? board.device.nickname : "未署名";
-    deviceMeta.textContent = who + " · " + formatWhen(board.device.at || Date.now());
+    deviceMeta.textContent = withSpin(who + " · " + formatWhen(board.device.at || Date.now()), board.device.spin);
   }
 
   function renderRanks(board) {
@@ -1184,7 +1235,8 @@ legend, .eyebrow {
       const button = document.createElement("button");
       button.type = "button";
       button.className = "rank-row" + (row.rank === 1 ? " is-first" : "");
-      button.setAttribute("aria-label", "第 " + row.rank + " 名 " + row.name + "，" + formatTime(row.ms) + " 秒，查看全部最好成绩");
+      const pace = spinPhrase(row.spin);
+      button.setAttribute("aria-label", "第 " + row.rank + " 名 " + row.name + "，" + formatTime(row.ms) + " 秒" + (pace ? "，" + pace : "") + "，查看全部最好成绩");
       button.addEventListener("click", function () {
         nickInput.value = row.name;
         archivePick = row.name;
@@ -1205,7 +1257,7 @@ legend, .eyebrow {
       const when = document.createElement("time");
       when.className = "when";
       when.dateTime = new Date(row.at || Date.now()).toISOString();
-      when.textContent = formatWhen(row.at || Date.now());
+      when.textContent = withSpin(formatWhen(row.at || Date.now()), row.spin);
       button.append(place, who, time, when);
       li.appendChild(button);
       rankList.appendChild(li);
@@ -1253,7 +1305,7 @@ legend, .eyebrow {
       time.textContent = formatTime(row.ms);
       const meta = document.createElement("span");
       meta.className = "when";
-      meta.textContent = row.runs + " 次 · " + formatWhen(row.at);
+      meta.textContent = withSpin(row.runs + " 次 · " + formatWhen(row.at), row.spin);
       li.append(cfg, time, meta);
       archiveList.appendChild(li);
     });
@@ -1320,7 +1372,11 @@ legend, .eyebrow {
     const nickname = cfg.nickname;
     const hadDevice = !!(board.device && typeof board.device.ms === "number");
     const isDeviceBest = !hadDevice || ms < board.device.ms;
-    if (isDeviceBest) board.device = { ms: ms, nickname: nickname, at: at };
+    const pace = cfg.play === "spin" && cfg.spin ? { dps: cfg.spin.dps, dir: cfg.spin.dir < 0 ? -1 : 1 } : null;
+    if (isDeviceBest) {
+      board.device = { ms: ms, nickname: nickname, at: at };
+      if (pace) board.device.spin = pace;
+    }
 
     const bucket = nickname ? board.names[nickname] : board.anon;
     const hadPersonal = !!(bucket && typeof bucket.ms === "number");
@@ -1330,6 +1386,8 @@ legend, .eyebrow {
     const nextBucket = isPersonalBest
       ? { ms: ms, at: at, runs: runs }
       : { ms: bucket.ms, at: bucket.at, runs: runs };
+    if (isPersonalBest && pace) nextBucket.spin = pace;
+    else if (!isPersonalBest && bucket.spin) nextBucket.spin = bucket.spin;
     if (nickname) board.names[nickname] = nextBucket;
     else board.anon = nextBucket;
 
@@ -1386,7 +1444,7 @@ legend, .eyebrow {
     nextNum.textContent = session.finished ? "完" : String(session.expected);
     const found = Math.min(session.total, session.expected - 1);
     progressCount.textContent = found + " / " + session.total;
-    playConfig.textContent = describe(cfg) + (cfg.nickname ? " · " + cfg.nickname : "");
+    playConfig.textContent = withSpin(describe(cfg) + (cfg.nickname ? " · " + cfg.nickname : ""), cfg.spin);
   }
 
   function paintProgress() {
@@ -1408,8 +1466,10 @@ legend, .eyebrow {
   }
 
   function buildBoard(numbers) {
+    const n = String(session.config.size);
+    stage.style.setProperty("--n", n);
     board.replaceChildren();
-    board.style.setProperty("--n", String(session.config.size));
+    board.style.setProperty("--n", n);
     board.setAttribute("aria-label", session.config.size + " 乘 " + session.config.size + " 的舒尔特方格");
     const frag = document.createDocumentFragment();
     numbers.forEach(function (n) {
@@ -1493,9 +1553,22 @@ legend, .eyebrow {
     } else {
       resultDelta.textContent = "用时 " + formatTime(summary.ms) + " 秒，离你的最好还差 " + formatTime(summary.ms - summary.previousPersonalMs) + " 秒。";
     }
-    resultExtra.textContent = "第 " + summary.runs + " 次完成 · " + describe(session.config);
+    resultExtra.textContent = withSpin("第 " + summary.runs + " 次完成 · " + describe(session.config), session.config.spin);
     quit.hidden = true;
     resultTitle.focus();
+  }
+
+  function stopSpinLoop() {
+    if (!session || !session.spinRaf) return;
+    cancelAnimationFrame(session.spinRaf);
+    session.spinRaf = 0;
+  }
+
+  function spinLoop(now) {
+    if (!session || !session.spin || session.finished) return;
+    const deg = session.spin.dir * session.spin.dps * ((now - session.spinT0) / 1000);
+    board.style.transform = "rotate(" + deg.toFixed(2) + "deg)";
+    session.spinRaf = requestAnimationFrame(spinLoop);
   }
 
   function finish(now) {
@@ -1504,6 +1577,7 @@ legend, .eyebrow {
     session.finished = true;
     if (session.raf) cancelAnimationFrame(session.raf);
     session.raf = 0;
+    stopSpinLoop();
     setClock(ms, "round");
     paintHud();
     paintProgress();
@@ -1549,9 +1623,13 @@ legend, .eyebrow {
 
   function startGame() {
     const cfg = currentConfig();
+    if (cfg.play === "spin") cfg.spin = rollSpin();
     persistLast();
     const seq = ++sessionSeq;
     if (session && session.raf) cancelAnimationFrame(session.raf);
+    stopSpinLoop();
+    board.style.transform = "";
+    stage.classList.toggle("is-spin", cfg.play === "spin");
     session = {
       seq: seq,
       config: cfg,
@@ -1563,8 +1641,15 @@ legend, .eyebrow {
       running: false,
       finished: false,
       raf: 0,
+      spin: cfg.spin || null,
+      spinT0: performance.now(),
+      spinRaf: 0,
     };
     buildBoard(session.order);
+    if (cfg.play === "spin") {
+      board.setAttribute("aria-label", cfg.size + " 乘 " + cfg.size + " 的旋转舒尔特方格");
+      session.spinRaf = requestAnimationFrame(spinLoop);
+    }
     result.hidden = true;
     quitBar.hidden = true;
     quit.hidden = false;
@@ -1574,21 +1659,25 @@ legend, .eyebrow {
     paintProgress();
     show("play");
     play.focus();
+    const pace = cfg.play === "spin" ? spinPhrase(cfg.spin) + "。" : "";
     if (cfg.timing === "standard") {
       requestAnimationFrame(function () {
         requestAnimationFrame(function () {
           if (!session || session.seq !== seq || session.finished || session.running) return;
           startClock(performance.now());
-          say("方格已出现，计时开始。");
+          say(pace + "方格已出现，计时开始。");
         });
       });
     } else {
-      say("找出数字 1。点中之后开始计时。");
+      say(pace + "找出数字 1。点中之后开始计时。");
     }
   }
 
   function goHome() {
     if (session && session.raf) cancelAnimationFrame(session.raf);
+    stopSpinLoop();
+    board.style.transform = "";
+    stage.classList.remove("is-spin");
     session = null;
     result.hidden = true;
     quitBar.hidden = true;
