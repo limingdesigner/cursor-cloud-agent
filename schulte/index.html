@@ -487,6 +487,7 @@ legend, .eyebrow {
   color: var(--cinnabar-deep);
 }
 .hud-note { min-height: 1.4em; margin-top: 6px; color: var(--cinnabar-deep); }
+.hud-note.is-alert { animation: wrong-note 0.55s ease; }
 .meter {
   height: 3px;
   margin: 12px 0 16px;
@@ -564,7 +565,8 @@ legend, .eyebrow {
 .cell.is-wrong:active {
   background: var(--cinnabar);
   color: #fff8f4;
-  animation: shake 0.22s linear;
+  z-index: 3;
+  animation: wrong-shake 0.5s ease;
 }
 .result {
   margin: 4px 0 14px;
@@ -634,10 +636,22 @@ legend, .eyebrow {
     transition: none !important;
   }
 }
-@keyframes shake {
+@keyframes wrong-shake {
+  0%, 100% { transform: translateX(0) scale(1); }
+  12% { transform: translateX(-8px) scale(1.08); }
+  28% { transform: translateX(8px) scale(1.08); }
+  44% { transform: translateX(-6px) scale(1.04); }
+  60% { transform: translateX(6px) scale(1.04); }
+  76% { transform: translateX(-3px); }
+  88% { transform: translateX(3px); }
+}
+@keyframes wrong-note {
   0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-3px); }
-  75% { transform: translateX(3px); }
+  15% { transform: translateX(-6px); }
+  30% { transform: translateX(6px); }
+  45% { transform: translateX(-4px); }
+  60% { transform: translateX(4px); }
+  75% { transform: translateX(-2px); }
 }
 @keyframes tap {
   0% { background-color: #efe2d4; }
@@ -1332,9 +1346,14 @@ legend, .eyebrow {
     window.scrollTo(0, 0);
   }
 
-  function say(text) {
+  function say(text, alert) {
     hudNote.textContent = text;
     live.textContent = text;
+    hudNote.classList.remove("is-alert");
+    if (alert) {
+      void hudNote.offsetWidth;
+      hudNote.classList.add("is-alert");
+    }
   }
 
   function setClock(ms, mode) {
@@ -1423,7 +1442,7 @@ legend, .eyebrow {
     btn.classList.add("is-wrong");
     const prev = wrongTimers.get(btn);
     if (prev) clearTimeout(prev);
-    wrongTimers.set(btn, setTimeout(function () { btn.classList.remove("is-wrong"); }, 240));
+    wrongTimers.set(btn, setTimeout(function () { btn.classList.remove("is-wrong"); }, 520));
   }
 
   function lockBoard() {
@@ -1483,8 +1502,8 @@ legend, .eyebrow {
     const now = performance.now();
     if (value !== session.expected) {
       flashWrong(btn);
-      if (session.config.timing === "relaxed" && !session.running) say("先点中 1，计时才会开始。");
-      else say("要找的是 " + session.expected + "。");
+      if (session.config.timing === "relaxed" && !session.running) say("点错了，先点 1。", true);
+      else say("点错了，要找的是 " + session.expected + "。", true);
       return;
     }
 
