@@ -566,17 +566,6 @@ legend, .eyebrow {
 .cell.is-done.is-settled:disabled {
   animation: none;
 }
-.board.is-dealt .cell,
-.board.is-dealt .cell.is-fade,
-.board.is-dealt .cell.is-done,
-.board.is-dealt .cell.is-settled,
-.board.is-dealt .cell.is-fade.is-settled,
-.board.is-dealt .cell.is-done.is-settled,
-.board.is-dealt .cell:disabled,
-.board.is-dealt .cell.is-fade.is-settled:disabled,
-.board.is-dealt .cell.is-done.is-settled:disabled {
-  animation: deal 0.16s ease;
-}
 .cell.is-wrong,
 .cell.is-wrong:hover,
 .cell.is-wrong:active {
@@ -677,10 +666,6 @@ legend, .eyebrow {
 @keyframes soften {
   0% { background-color: #efe2d4; color: #1d1612; }
   100% { background-color: #e4dacb; color: #9a9086; }
-}
-@keyframes deal {
-  from { opacity: 0.25; }
-  to { opacity: 1; }
 }
 </style>
 </head>
@@ -1422,7 +1407,7 @@ legend, .eyebrow {
     return values;
   }
 
-  function buildBoard(numbers, just) {
+  function buildBoard(numbers) {
     board.replaceChildren();
     board.style.setProperty("--n", String(session.config.size));
     board.setAttribute("aria-label", session.config.size + " 乘 " + session.config.size + " 的舒尔特方格");
@@ -1436,19 +1421,12 @@ legend, .eyebrow {
       btn.setAttribute("aria-label", String(n));
       if (session.found[n]) {
         btn.disabled = true;
-        btn.classList.add(session.config.reveal === "fade" ? "is-fade" : "is-done");
-        if (n !== just) btn.classList.add("is-settled");
+        btn.classList.add(session.config.reveal === "fade" ? "is-fade" : "is-done", "is-settled");
         btn.setAttribute("aria-label", "数字 " + n + "，已点过");
       }
       frag.appendChild(btn);
     });
     board.appendChild(frag);
-  }
-
-  function showDeal() {
-    board.classList.remove("is-dealt");
-    void board.offsetWidth;
-    board.classList.add("is-dealt");
   }
 
   function startClock(now) {
@@ -1561,8 +1539,7 @@ legend, .eyebrow {
     }
     if (session.config.play === "reshuffle") {
       session.order = shuffle(session.total);
-      buildBoard(session.order, value);
-      showDeal();
+      buildBoard(session.order);
     } else {
       markDone(btn);
     }
@@ -1587,7 +1564,6 @@ legend, .eyebrow {
       finished: false,
       raf: 0,
     };
-    board.classList.remove("is-dealt");
     buildBoard(session.order);
     result.hidden = true;
     quitBar.hidden = true;
