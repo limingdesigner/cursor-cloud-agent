@@ -525,10 +525,13 @@ legend, .eyebrow {
   opacity: 1;
   animation: tap 0.2s ease;
 }
-.cell.is-vanish {
-  background: #ddd4c6;
-  color: transparent;
+.cell.is-fade,
+.cell.is-fade:disabled {
+  background: #e4dacb;
+  color: #9a9086;
   cursor: default;
+  opacity: 1;
+  animation: soften 0.22s ease;
 }
 .cell.is-wrong,
 .cell.is-wrong:hover,
@@ -614,6 +617,10 @@ legend, .eyebrow {
   0% { background-color: #efe2d4; }
   100% { background-color: var(--paper-2); }
 }
+@keyframes soften {
+  0% { background-color: #efe2d4; color: #1d1612; }
+  100% { background-color: #e4dacb; color: #9a9086; }
+}
 </style>
 </head>
 <body data-view="home">
@@ -686,9 +693,9 @@ legend, .eyebrow {
               <span class="choice-hint">点中后保持原样，只有一下点击动效。</span>
             </label>
             <label class="choice">
-              <input type="radio" name="reveal" value="vanish">
-              <span class="choice-name">点击后隐去</span>
-              <span class="choice-hint">点中后数字消失，空格留在原处。</span>
+              <input type="radio" name="reveal" value="fade">
+              <span class="choice-name">点击后变淡</span>
+              <span class="choice-hint">点中后数字还在，颜色变淡。</span>
             </label>
           </div>
         </fieldset>
@@ -742,7 +749,7 @@ legend, .eyebrow {
         </div>
       </aside>
 
-      <p class="foot">每种选择分开记最快成绩：玩法、边长、计时、点过之后可见或隐去。同一昵称在每种设置下保留自己的最好成绩，并按这个成绩排名。</p>
+      <p class="foot">每种选择分开记最快成绩：玩法、边长、计时、点过之后可见或变淡。同一昵称在每种设置下保留自己的最好成绩，并按这个成绩排名。</p>
     </div>
   </div>
 
@@ -876,6 +883,9 @@ legend, .eyebrow {
         return fresh();
       }
       data.last = data.last && typeof data.last === "object" ? data.last : {};
+      if (renameVanish(data)) {
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch (err) { /* 记下迁移失败时，下一局仍会按变淡来玩。 */ }
+      }
       return data;
     } catch (err) {
       return fresh();
@@ -890,6 +900,24 @@ legend, .eyebrow {
     }
   }
 
+  function renameVanish(data) {
+    let changed = false;
+    if (data.last && data.last.reveal === "vanish") {
+      data.last.reveal = "fade";
+      changed = true;
+    }
+    Object.keys(data.boards).forEach(function (key) {
+      const parts = key.split("|");
+      if (parts[3] !== "vanish") return;
+      parts[3] = "fade";
+      const next = parts.join("|");
+      if (!data.boards[next]) data.boards[next] = data.boards[key];
+      delete data.boards[key];
+      changed = true;
+    });
+    return changed;
+  }
+
   function normalizeNick(raw) {
     const clean = String(raw || "").replace(/[\u0000-\u001F\u007F]/g, "").replace(/\s+/g, " ").trim();
     return Array.from(clean).slice(0, 16).join("");
@@ -901,7 +929,7 @@ legend, .eyebrow {
     if (!Number.isInteger(size) || size < 1 || size > 10) size = 5;
     let timing = data.get("timing") === "relaxed" ? "relaxed" : "standard";
     if (size <= 3) timing = "standard";
-    const reveal = data.get("reveal") === "vanish" ? "vanish" : "stay";
+    const reveal = data.get("reveal") === "fade" ? "fade" : "stay";
     return {
       play: PLAY,
       size: size,
@@ -923,14 +951,14 @@ legend, .eyebrow {
     const reveal = parts[3];
     if (!Number.isInteger(size) || size < 1 || size > 10) return null;
     if (timing !== "standard" && timing !== "relaxed") return null;
-    if (reveal !== "stay" && reveal !== "vanish") return null;
+    if (reveal !== "stay" && reveal !== "fade") return null;
     if (size <= 3 && timing === "relaxed") return null;
     return { play: PLAY, size: size, timing: timing, reveal: reveal };
   }
 
   function describe(cfg) {
     const timing = cfg.timing === "relaxed" ? "轻松计时" : "标准计时";
-    const reveal = cfg.reveal === "vanish" ? "点后隐去" : "点后可见";
+    const reveal = cfg.reveal === "fade" ? "点后变淡" : "点后可见";
     return "标准方格 · " + cfg.size + "×" + cfg.size + " · " + timing + " · " + reveal;
   }
 
@@ -981,7 +1009,7 @@ legend, .eyebrow {
     if (!Number.isInteger(size) || size < 1 || size > 10) size = 5;
     let timing = last.timing === "relaxed" ? "relaxed" : "standard";
     if (size <= 3) timing = "standard";
-    const reveal = last.reveal === "vanish" ? "vanish" : "stay";
+    const reveal = last.reveal === "fade" ? "fade" : "stay";
     form.elements.size.value = String(size);
     form.elements.timing.value = timing;
     form.elements.reveal.value = reveal;
@@ -1317,10 +1345,9 @@ legend, .eyebrow {
 
   function markDone(btn) {
     btn.disabled = true;
-    if (session.config.reveal === "vanish") {
-      btn.classList.add("is-vanish");
-      btn.textContent = "";
-      btn.setAttribute("aria-label", "已点过");
+    if (session.config.reveal === "fade") {
+      btn.classList.add("is-fade");
+      btn.setAttribute("aria-label", "数字 " + btn.dataset.n + "，已点过");
     } else {
       btn.classList.add("is-done");
       btn.setAttribute("aria-label", "数字 " + btn.dataset.n + "，已点过");
