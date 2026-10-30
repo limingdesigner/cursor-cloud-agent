@@ -279,6 +279,32 @@ legend, .eyebrow {
   color: var(--ink-soft);
   font-size: 14px;
 }
+.nick-picks { margin-top: 10px; }
+.picks-label { margin-top: 0; }
+.picks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+.pick {
+  font-family: var(--serif);
+  background: var(--paper-2);
+  border: 1px solid var(--line-strong);
+  padding: 8px 12px;
+  letter-spacing: 0.04em;
+  font-size: 17px;
+  line-height: 1.2;
+}
+.pick.is-on {
+  background: var(--ink);
+  color: var(--paper);
+  border-color: var(--ink);
+}
+.pick:focus-visible {
+  outline: 2px solid var(--cinnabar);
+  outline-offset: 2px;
+}
 
 .btn {
   font-family: var(--serif);
@@ -703,6 +729,10 @@ legend, .eyebrow {
         <fieldset>
           <legend>昵称</legend>
           <input id="nick" name="nickname" type="text" maxlength="16" placeholder="选填，用来排名" autocomplete="nickname" spellcheck="false" enterkeyhint="go">
+          <div id="nick-picks" class="nick-picks" hidden>
+            <p class="hint picks-label">已有昵称</p>
+            <div id="nick-pick-list" class="picks" role="group" aria-label="已有昵称"></div>
+          </div>
           <p id="mine" class="hint"></p>
         </fieldset>
 
@@ -809,6 +839,8 @@ legend, .eyebrow {
   const play = document.getElementById("play");
   const form = document.getElementById("setup");
   const nickInput = document.getElementById("nick");
+  const nickPicks = document.getElementById("nick-picks");
+  const nickPickList = document.getElementById("nick-pick-list");
   const sizeMeta = document.getElementById("size-meta");
   const mine = document.getElementById("mine");
   const chase = document.getElementById("chase");
@@ -1200,10 +1232,41 @@ legend, .eyebrow {
     });
   }
 
+  function renderNickPicks() {
+    const names = allNicknames();
+    if (!names.length) {
+      nickPicks.hidden = true;
+      nickPickList.replaceChildren();
+      delete nickPickList.dataset.sig;
+      return;
+    }
+    nickPicks.hidden = false;
+    const current = normalizeNick(nickInput.value);
+    const signature = names.join("\0") + "\0" + current;
+    if (nickPickList.dataset.sig === signature) return;
+    nickPickList.dataset.sig = signature;
+    nickPickList.replaceChildren();
+    names.forEach(function (name) {
+      const button = document.createElement("button");
+      button.type = "button";
+      const on = name === current;
+      button.className = "pick" + (on ? " is-on" : "");
+      button.textContent = name;
+      button.setAttribute("aria-pressed", on ? "true" : "false");
+      button.addEventListener("click", function () {
+        nickInput.value = name;
+        persistLast();
+        renderRecords();
+      });
+      nickPickList.appendChild(button);
+    });
+  }
+
   function renderRecords() {
     const cfg = currentConfig();
     const board = db.boards[configKey(cfg)] || null;
     paintSetup();
+    renderNickPicks();
     renderDevice(board);
     renderRanks(board);
     renderArchive();
