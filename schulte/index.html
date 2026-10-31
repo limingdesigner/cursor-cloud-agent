@@ -353,6 +353,7 @@ legend, .eyebrow {
   border: 1px solid var(--line);
   padding: 16px 16px 12px;
 }
+.device-label { margin-top: 14px; }
 .device-time {
   font-family: var(--mono);
   font-size: clamp(32px, 5vw, 44px);
@@ -636,6 +637,48 @@ legend, .eyebrow {
   color: var(--cinnabar-deep);
 }
 
+@media (min-width: 960px) {
+  body { padding: 12px 16px 16px; }
+  .sheet {
+    max-width: 1160px;
+    padding: 14px 20px 12px calc(var(--gutter) + 14px);
+  }
+  .mast { margin-bottom: 10px; padding-bottom: 8px; gap: 12px; }
+  .seal { width: 40px; height: 40px; font-size: 24px; }
+  h1 { font-size: 36px; }
+  .home-grid { gap: 8px 24px; align-items: stretch; }
+  .records { height: 100%; }
+  #setup {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    column-gap: 12px;
+    row-gap: 8px;
+    align-items: start;
+  }
+  #setup > fieldset { margin: 0; }
+  #setup > fieldset:nth-child(1),
+  #setup > fieldset:nth-child(2) { grid-column: 1 / -1; }
+  .start-block { margin: 0; }
+  legend, .eyebrow { margin-bottom: 4px; }
+  .hint { margin-top: 4px; font-size: 13px; line-height: 1.35; }
+  .choice { min-height: 0; padding: 6px 8px 7px; gap: 1px; }
+  .choice-name { font-size: 18px; letter-spacing: 0.04em; }
+  .choice-hint { font-size: 12px; line-height: 1.3; }
+  .plays, .pair { gap: 6px; }
+  .size { aspect-ratio: auto; height: 32px; font-size: 14px; }
+  #nick { font-size: 18px; padding: 2px 0 4px; }
+  .btn.primary { padding: 8px 14px; font-size: 18px; }
+  .records { padding: 12px 12px 8px; }
+  .device-label { margin-top: 8px; }
+  .device-time { font-size: 34px; }
+  .tabs { margin-top: 10px; }
+  .ranks, .archive { max-height: 168px; }
+  .foot { margin: 0; font-size: 12px; line-height: 1.4; }
+  .play-top { margin-bottom: 4px; }
+  .hud { margin-top: 2px; }
+  .meter { margin: 8px 0 10px; }
+  .clock { font-size: clamp(40px, 8vw, 64px); }
+}
 @media (max-width: 800px) {
   body { padding: 12px 10px 28px; }
   .sheet {
@@ -798,7 +841,7 @@ legend, .eyebrow {
       <aside class="records" aria-labelledby="record-title">
         <h2 id="record-title" class="eyebrow">记录</h2>
         <p id="record-heading" class="hint record-lead"></p>
-        <p class="eyebrow" style="margin-top:14px">本机最快</p>
+        <p class="eyebrow device-label">本机最快</p>
         <p class="device-time" id="device-time">—</p>
         <p class="device-meta" id="device-meta"></p>
 
