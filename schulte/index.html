@@ -1,0 +1,1886 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#000000">
+<title>舒尔特方格</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect fill='%238e2c1c' width='32' height='32'/%3E%3Cpath stroke='%23f4efe6' stroke-width='1.2' d='M11 5v22M21 5v22M5 11h22M5 21h22'/%3E%3C/svg%3E">
+<style>
+@font-face {
+  font-family: "ZCOOL XiaoWei";
+  src: url("fonts/ZCOOLXiaoWei-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Fragment Mono";
+  src: url("fonts/FragmentMono-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --ink: #1d1612;
+  --ink-soft: #5a5148;
+  --ink-faint: #8d847a;
+  --paper: #f3eee4;
+  --paper-2: #faf6ef;
+  --line: rgba(29, 22, 18, 0.14);
+  --line-strong: rgba(29, 22, 18, 0.55);
+  --cinnabar: #c4452d;
+  --cinnabar-deep: #8e2c1c;
+  --serif: "ZCOOL XiaoWei", "Songti SC", "STSong", "SimSun", "Noto Serif CJK SC", "WenQuanYi Micro Hei", serif;
+  --mono: "Fragment Mono", "WenQuanYi Micro Hei Mono", ui-monospace, monospace;
+  --gutter: 36px;
+  --shadow: 0 1px 0 rgba(255, 248, 236, 0.45) inset, 0 22px 50px rgba(0, 0, 0, 0.38);
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html {
+  zoom: 100%;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  scroll-behavior: auto;
+}
+body {
+  margin: 0;
+  min-height: 100dvh;
+  color: var(--ink);
+  font-family: var(--serif);
+  font-size: 17px;
+  line-height: 1.5;
+  background: #000;
+  padding: 28px 16px 48px;
+}
+p, h1, h2, h3 { margin: 0; font-weight: 400; }
+button, input, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+::selection { background: #efc2b6; color: var(--ink); }
+
+.sheet {
+  --pad: 32px;
+  position: relative;
+  z-index: 1;
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 32px var(--pad) 36px calc(var(--gutter) + 26px);
+  background-color: var(--paper);
+  background-image:
+    linear-gradient(rgba(196, 69, 45, 0.8), rgba(196, 69, 45, 0.8)),
+    linear-gradient(#f7f2e9, var(--paper) 180px);
+  background-size: 1px 100%, auto;
+  background-position: var(--gutter) 0, 0 0;
+  background-repeat: no-repeat;
+  box-shadow: var(--shadow);
+}
+body[data-view="play"] .sheet { max-width: 780px; }
+.sheet::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.045;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='160' height='160' filter='url(%23n)'/></svg>");
+}
+
+.mast {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 26px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--line-strong);
+}
+.seal {
+  width: 58px;
+  height: 58px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  color: var(--cinnabar);
+  border: 2px solid var(--cinnabar);
+  box-shadow: inset 0 0 0 1px var(--cinnabar);
+  font-size: 34px;
+  line-height: 1;
+  transform: rotate(-8deg);
+}
+.kicker {
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.16em;
+  color: var(--cinnabar-deep);
+}
+h1 {
+  font-size: clamp(40px, 6vw, 64px);
+  line-height: 1;
+  letter-spacing: 0.06em;
+}
+.mast-side {
+  margin-left: auto;
+  text-align: right;
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  color: var(--ink-soft);
+}
+
+.home-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(260px, 0.85fr);
+  gap: 26px 40px;
+  align-items: start;
+}
+fieldset {
+  border: 0;
+  margin: 0 0 18px;
+  padding: 0;
+  min-inline-size: 0;
+}
+legend, .eyebrow {
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.16em;
+  color: var(--cinnabar-deep);
+  padding: 0;
+  margin-bottom: 8px;
+}
+.hint {
+  margin-top: 8px;
+  color: var(--ink-soft);
+  font-size: 15px;
+  line-height: 1.55;
+}
+.record-lead { margin-top: 0; }
+.block { margin: 0 0 18px; }
+.play-card {
+  border: 1px solid var(--line-strong);
+  background: var(--paper-2);
+  box-shadow: inset 3px 0 0 var(--cinnabar);
+  padding: 12px 14px 14px;
+}
+.play-card-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+.play-card h3 { font-size: 26px; letter-spacing: 0.04em; }
+.badge {
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  color: var(--cinnabar-deep);
+}
+.play-card p { margin-top: 4px; color: var(--ink-soft); font-size: 15px; }
+
+.pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.plays {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.plays .choice { min-height: 0; }
+.choice {
+  position: relative;
+  display: grid;
+  gap: 4px;
+  align-content: start;
+  min-height: 108px;
+  padding: 12px 12px 14px;
+  border: 1px solid var(--line-strong);
+  background: rgba(255, 252, 247, 0.45);
+  cursor: pointer;
+}
+.choice input {
+  position: absolute;
+  opacity: 0;
+  inset: 0;
+  margin: 0;
+  cursor: pointer;
+}
+.choice-name { font-size: 24px; letter-spacing: 0.06em; }
+.choice-hint { color: var(--ink-soft); font-size: 14px; line-height: 1.45; }
+.choice:has(input:checked) {
+  background: var(--paper-2);
+  border-color: var(--ink);
+  box-shadow: inset 3px 0 0 var(--cinnabar);
+}
+.choice:has(input:focus-visible) {
+  outline: 2px solid var(--cinnabar);
+  outline-offset: 2px;
+}
+.choice:has(input:disabled) {
+  opacity: 0.42;
+  cursor: not-allowed;
+}
+.choice:has(input:disabled) input { cursor: not-allowed; }
+
+.sizes {
+  display: grid;
+  grid-template-columns: repeat(10, minmax(0, 1fr));
+  gap: 4px;
+}
+.size {
+  position: relative;
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  border: 1px solid var(--line-strong);
+  background: var(--paper-2);
+  font-family: var(--mono);
+  font-size: clamp(12px, 2.2vw, 16px);
+  cursor: pointer;
+}
+.size input {
+  position: absolute;
+  opacity: 0;
+  inset: 0;
+  margin: 0;
+  cursor: pointer;
+}
+.size:has(input:checked) {
+  background: var(--ink);
+  color: var(--paper);
+  border-color: var(--ink);
+}
+.size:has(input:focus-visible) {
+  outline: 2px solid var(--cinnabar);
+  outline-offset: 2px;
+}
+
+#nick, select {
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--ink);
+  border-radius: 0;
+  padding: 8px 0 6px;
+  font-size: 22px;
+}
+#nick::placeholder { color: var(--ink-faint); }
+#nick:focus, select:focus {
+  outline: none;
+  border-bottom-color: var(--cinnabar);
+}
+.select-label {
+  display: block;
+  margin: 12px 0 0;
+  color: var(--ink-soft);
+  font-size: 14px;
+}
+.nick-picks { margin-top: 10px; }
+.picks-label { margin-top: 0; }
+.picks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+.pick {
+  font-family: var(--serif);
+  background: var(--paper-2);
+  border: 1px solid var(--line-strong);
+  padding: 8px 12px;
+  letter-spacing: 0.04em;
+  font-size: 17px;
+  line-height: 1.2;
+}
+.pick.is-on {
+  background: var(--ink);
+  color: var(--paper);
+  border-color: var(--ink);
+}
+.pick:focus-visible {
+  outline: 2px solid var(--cinnabar);
+  outline-offset: 2px;
+}
+
+.btn {
+  font-family: var(--serif);
+  border-radius: 0;
+  letter-spacing: 0.12em;
+  white-space: nowrap;
+}
+.btn.primary {
+  background: var(--cinnabar-deep);
+  color: #fff8f4;
+  border: none;
+  padding: 12px 18px;
+  font-size: 20px;
+}
+.btn.primary:hover { background: #741f12; }
+.btn.primary:active { transform: translateY(1px); }
+#start-btn { width: 100%; letter-spacing: 0.28em; text-indent: 0.28em; }
+.btn.ghost {
+  background: transparent;
+  color: var(--ink);
+  border: 1px solid rgba(29, 22, 18, 0.38);
+  padding: 8px 14px;
+  font-size: 16px;
+}
+.btn.ghost:hover { border-color: var(--ink); }
+.btn.texty {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--ink-soft);
+  letter-spacing: 0.08em;
+  font-size: 15px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+
+.records {
+  background: rgba(29, 22, 18, 0.035);
+  border: 1px solid var(--line);
+  padding: 16px 16px 12px;
+}
+.device-label { margin-top: 14px; }
+.device-time {
+  font-family: var(--mono);
+  font-size: clamp(32px, 5vw, 44px);
+  line-height: 1;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+.device-time .unit {
+  font-family: var(--serif);
+  font-size: 16px;
+  letter-spacing: 0.12em;
+  margin-left: 6px;
+}
+.device-meta { margin-top: 6px; color: var(--ink-soft); font-size: 15px; }
+.tabs {
+  display: flex;
+  gap: 4px;
+  margin-top: 18px;
+  border-bottom: 1px solid var(--line-strong);
+}
+.tabs button {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  padding: 8px 10px;
+  color: var(--ink-soft);
+  letter-spacing: 0.08em;
+}
+.tabs button[aria-selected="true"] {
+  color: var(--ink);
+  border-bottom-color: var(--cinnabar);
+}
+.rank-head {
+  display: grid;
+  grid-template-columns: 2.2rem minmax(0, 1fr) auto auto;
+  gap: 8px;
+  margin-top: 10px;
+  color: var(--ink-faint);
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+}
+.ranks, .archive { list-style: none; margin: 0; padding: 0; max-height: 360px; overflow: auto; }
+.rank-row {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 2.2rem minmax(0, 1fr) auto auto;
+  gap: 8px;
+  align-items: baseline;
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--line);
+  padding: 8px 0;
+  text-align: left;
+  letter-spacing: 0;
+}
+.rank-row:hover .who { color: var(--cinnabar-deep); }
+.place, .pb, .when, .clock, .next-num, .size, .device-time {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+}
+.place { color: var(--ink-soft); }
+.rank-row.is-first .place, .rank-row.is-first .pb { color: var(--cinnabar-deep); }
+.who { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.when { color: var(--ink-soft); font-size: 13px; }
+.pb { font-size: 16px; }
+.archive-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: 12px;
+  row-gap: 2px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+}
+.archive-row .who { grid-column: 1; white-space: normal; }
+.archive-row .pb { grid-column: 2; grid-row: 1 / span 2; align-self: center; }
+.archive-row .when { grid-column: 1; }
+.clear-box { margin-top: 16px; }
+.clear-confirm {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  color: var(--cinnabar-deep);
+}
+.foot {
+  grid-column: 1 / -1;
+  color: var(--ink-soft);
+  font-size: 14px;
+}
+
+.play-top, .hud, .quit-bar {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+}
+.play-top { margin-bottom: 8px; align-items: flex-start; }
+.play-config {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: var(--ink-soft);
+}
+#quit { flex: none; }
+.quit-bar {
+  justify-content: flex-start;
+  padding: 8px 0 4px;
+  color: var(--cinnabar-deep);
+}
+.hud { align-items: flex-end; margin-top: 8px; }
+.clock-line { display: flex; align-items: baseline; gap: 8px; }
+.dot {
+  width: 8px;
+  height: 8px;
+  border: 1px solid var(--cinnabar);
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 6px;
+  vertical-align: 1px;
+}
+.dot.is-on { background: var(--cinnabar); }
+.clock {
+  font-size: clamp(46px, 12vw, 76px);
+  line-height: 0.85;
+  letter-spacing: -0.04em;
+}
+.clock.is-frozen { color: var(--ink-faint); }
+.unit { font-size: 16px; letter-spacing: 0.14em; color: var(--ink-soft); }
+.caption { color: var(--ink-soft); font-size: 14px; letter-spacing: 0.08em; }
+.hud-next { text-align: right; }
+.next-num {
+  font-size: clamp(32px, 8vw, 52px);
+  line-height: 0.9;
+  color: var(--cinnabar-deep);
+}
+.hud-note { min-height: 1.4em; margin-top: 6px; color: var(--cinnabar-deep); }
+.hud-note.is-alert { animation: wrong-note 0.55s ease; }
+.meter {
+  height: 3px;
+  margin: 12px 0 16px;
+  background: rgba(29, 22, 18, 0.18);
+}
+.meter span {
+  display: block;
+  height: 100%;
+  width: 0;
+  background: var(--cinnabar);
+  transition: width 120ms linear;
+}
+#play:focus { outline: none; }
+.stage {
+  --n: 5;
+  width: min(100%, calc(100dvh - 250px), calc(var(--n) * 92px), 680px);
+  margin-inline: auto;
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+}
+.board {
+  --n: 5;
+  width: 100%;
+  aspect-ratio: 1;
+  display: grid;
+  grid-template-columns: repeat(var(--n), minmax(0, 1fr));
+  gap: 1px;
+  padding: 1px;
+  background: rgba(29, 22, 18, 0.78);
+  container-type: inline-size;
+  transform-origin: center center;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+}
+.stage.is-spin .board { width: 69%; will-change: transform; }
+.stage.is-spin,
+.stage.is-spin .board,
+.stage.is-spin .cell { touch-action: none; }
+.cell {
+  position: relative;
+  appearance: none;
+  border: 0;
+  margin: 0;
+  padding: 0;
+  background: var(--paper-2);
+  color: var(--ink);
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+  font-size: clamp(11px, calc(40cqi / var(--n)), 68px);
+  line-height: 1;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+.cell:not(:disabled):hover { background: #fffdf8; }
+.cell:not(:disabled):active { background: #efe2d4; }
+.cell:focus { outline: none; }
+.cell:focus-visible {
+  outline: 2px solid var(--cinnabar);
+  outline-offset: -3px;
+  z-index: 1;
+}
+.cell:disabled { opacity: 1; }
+.cell.is-done,
+.cell.is-done:disabled {
+  background: var(--paper-2);
+  color: var(--ink);
+  cursor: default;
+  opacity: 1;
+  animation: tap 0.2s ease;
+}
+.cell.is-fade,
+.cell.is-fade:disabled {
+  background: #e4dacb;
+  color: #9a9086;
+  cursor: default;
+  opacity: 1;
+  animation: soften 0.22s ease;
+}
+.cell.is-fade.is-settled,
+.cell.is-done.is-settled,
+.cell.is-fade.is-settled:disabled,
+.cell.is-done.is-settled:disabled {
+  animation: none;
+}
+.cell.is-wrong,
+.cell.is-wrong:hover,
+.cell.is-wrong:active {
+  background: var(--cinnabar);
+  color: #fff8f4;
+  z-index: 3;
+  animation: wrong-shake 0.5s ease;
+}
+.result {
+  margin: 4px 0 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--ink);
+}
+.result-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+#result-title { font-size: clamp(28px, 5vw, 40px); letter-spacing: 0.06em; }
+#result-title.is-hot { color: var(--cinnabar-deep); }
+.stamp {
+  width: 72px;
+  height: 72px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border: 2px solid var(--cinnabar);
+  border-radius: 50%;
+  color: var(--cinnabar);
+  letter-spacing: 0.12em;
+  transform: rotate(-12deg);
+  font-size: 20px;
+}
+#result-detail, #result-delta, #result-extra { margin-top: 6px; }
+#result-extra { color: var(--ink-soft); font-size: 14px; }
+.sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+.noscript {
+  margin-bottom: 12px;
+  color: var(--cinnabar-deep);
+}
+
+@media (min-width: 960px) {
+  body { padding: 12px 16px 16px; }
+  .sheet {
+    max-width: 1160px;
+    padding: 14px 20px 12px calc(var(--gutter) + 14px);
+  }
+  .mast { margin-bottom: 10px; padding-bottom: 8px; gap: 12px; }
+  .seal { width: 40px; height: 40px; font-size: 24px; }
+  h1 { font-size: 36px; }
+  .home-grid { gap: 8px 24px; align-items: stretch; }
+  .records { height: 100%; }
+  #setup {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    column-gap: 12px;
+    row-gap: 8px;
+    align-items: start;
+  }
+  #setup > fieldset { margin: 0; }
+  #setup > fieldset:nth-child(1),
+  #setup > fieldset:nth-child(2) { grid-column: 1 / -1; }
+  .start-block { margin: 0; }
+  legend, .eyebrow { margin-bottom: 4px; }
+  .hint { margin-top: 4px; font-size: 13px; line-height: 1.35; }
+  .choice { min-height: 0; padding: 6px 8px 7px; gap: 1px; }
+  .choice-name { font-size: 18px; letter-spacing: 0.04em; }
+  .choice-hint { font-size: 12px; line-height: 1.3; }
+  .plays, .pair { gap: 6px; }
+  .size { aspect-ratio: auto; height: 32px; font-size: 14px; }
+  #nick { font-size: 18px; padding: 2px 0 4px; }
+  .btn.primary { padding: 8px 14px; font-size: 18px; }
+  .records { padding: 12px 12px 8px; }
+  .device-label { margin-top: 8px; }
+  .device-time { font-size: 34px; }
+  .tabs { margin-top: 10px; }
+  .ranks, .archive { max-height: 168px; }
+  .foot { margin: 0; font-size: 12px; line-height: 1.4; }
+  .play-top { margin-bottom: 4px; }
+  .hud { margin-top: 2px; }
+  .meter { margin: 8px 0 10px; }
+  .clock { font-size: clamp(40px, 8vw, 64px); }
+}
+@media (max-width: 800px) {
+  body { padding: 12px 10px 28px; }
+  .sheet {
+    --gutter: 16px;
+    --pad: 16px;
+    padding: 22px 16px 24px calc(var(--gutter) + 14px);
+  }
+  .home-grid { grid-template-columns: 1fr; }
+  .mast { align-items: flex-start; }
+  .mast-side { display: none; }
+  .pair { grid-template-columns: 1fr 1fr; }
+  .choice { min-height: 0; }
+  .rank-row, .rank-head { grid-template-columns: 1.8rem minmax(0, 1fr) auto; }
+  .rank-row .when, .rank-head .when { display: none; }
+}
+@media (max-width: 420px) {
+  .pair, .plays { grid-template-columns: 1fr; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+@keyframes wrong-shake {
+  0%, 100% { transform: translateX(0) scale(1); }
+  12% { transform: translateX(-8px) scale(1.08); }
+  28% { transform: translateX(8px) scale(1.08); }
+  44% { transform: translateX(-6px) scale(1.04); }
+  60% { transform: translateX(6px) scale(1.04); }
+  76% { transform: translateX(-3px); }
+  88% { transform: translateX(3px); }
+}
+@keyframes wrong-note {
+  0%, 100% { transform: translateX(0); }
+  15% { transform: translateX(-6px); }
+  30% { transform: translateX(6px); }
+  45% { transform: translateX(-4px); }
+  60% { transform: translateX(4px); }
+  75% { transform: translateX(-2px); }
+}
+@keyframes tap {
+  0% { background-color: #efe2d4; }
+  100% { background-color: var(--paper-2); }
+}
+@keyframes soften {
+  0% { background-color: #efe2d4; color: #1d1612; }
+  100% { background-color: #e4dacb; color: #9a9086; }
+}
+</style>
+</head>
+<body data-view="home">
+<main class="sheet">
+  <noscript><p class="noscript">打开 JavaScript 后才能计时，并把最好成绩留在这台浏览器里。</p></noscript>
+
+  <div id="home">
+    <header class="mast">
+      <div class="seal" aria-hidden="true">舒</div>
+      <div>
+        <p class="kicker">SCHULTE TABLE</p>
+        <h1>舒尔特方格</h1>
+      </div>
+      <p class="mast-side">成绩只留在<br>这台浏览器</p>
+    </header>
+
+    <div class="home-grid">
+      <form id="setup" autocomplete="off">
+        <fieldset>
+          <legend>玩法</legend>
+          <div class="plays">
+            <label class="choice">
+              <input type="radio" name="play" value="classic" checked>
+              <span class="choice-name">标准方格</span>
+              <span class="choice-hint">位置不变。从 1 按顺序点到最后一格。</span>
+            </label>
+            <label class="choice">
+              <input type="radio" name="play" value="reshuffle">
+              <span class="choice-name">每点重排</span>
+              <span class="choice-hint">每点中一个，整盘方格就重新打乱。</span>
+            </label>
+            <label class="choice">
+              <input type="radio" name="play" value="spin">
+              <span class="choice-name">匀速旋转</span>
+              <span class="choice-hint">一会儿顺时针，一会儿逆时针。最慢约 36 秒一圈，最快 2 秒一圈。轻松模式点中 1 后才转。</span>
+            </label>
+            <label class="choice">
+              <input type="radio" name="play" value="idle">
+              <span class="choice-name">一秒重排</span>
+              <span class="choice-hint">一秒没点中就整盘重排。轻松模式下，点中 1 之后才开始计时重排。</span>
+            </label>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>边长</legend>
+          <div class="sizes">
+            <label class="size"><input type="radio" name="size" value="1"><span>1</span></label>
+            <label class="size"><input type="radio" name="size" value="2"><span>2</span></label>
+            <label class="size"><input type="radio" name="size" value="3"><span>3</span></label>
+            <label class="size"><input type="radio" name="size" value="4"><span>4</span></label>
+            <label class="size"><input type="radio" name="size" value="5" checked><span>5</span></label>
+            <label class="size"><input type="radio" name="size" value="6"><span>6</span></label>
+            <label class="size"><input type="radio" name="size" value="7"><span>7</span></label>
+            <label class="size"><input type="radio" name="size" value="8"><span>8</span></label>
+            <label class="size"><input type="radio" name="size" value="9"><span>9</span></label>
+            <label class="size"><input type="radio" name="size" value="10"><span>10</span></label>
+          </div>
+          <p id="size-meta" class="hint"></p>
+        </fieldset>
+
+        <fieldset>
+          <legend>计时</legend>
+          <div class="pair">
+            <label class="choice">
+              <input type="radio" name="timing" value="standard" checked>
+              <span class="choice-name">标准</span>
+              <span class="choice-hint">看见方格就开始计时。</span>
+            </label>
+            <label class="choice" id="relaxed-choice">
+              <input type="radio" name="timing" value="relaxed">
+              <span class="choice-name">轻松</span>
+              <span class="choice-hint">点中数字 1 之后才开始计时。</span>
+            </label>
+          </div>
+          <p class="hint">边长 1 到 3 只有标准计时，轻松计时从边长 4 开始。</p>
+        </fieldset>
+
+        <fieldset>
+          <legend>点过的方格</legend>
+          <div class="pair">
+            <label class="choice">
+              <input type="radio" name="reveal" value="stay" checked>
+              <span class="choice-name">保持可见</span>
+              <span class="choice-hint">点中后保持原样，只有一下点击动效。</span>
+            </label>
+            <label class="choice">
+              <input type="radio" name="reveal" value="fade">
+              <span class="choice-name">点击后变淡</span>
+              <span class="choice-hint">点中后数字还在，颜色变淡。</span>
+            </label>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>昵称</legend>
+          <input id="nick" name="nickname" type="text" maxlength="16" placeholder="选填，用来排名" autocomplete="nickname" spellcheck="false" enterkeyhint="go">
+          <div id="nick-picks" class="nick-picks" hidden>
+            <p class="hint picks-label">已有昵称</p>
+            <div id="nick-pick-list" class="picks" role="group" aria-label="已有昵称"></div>
+          </div>
+          <p id="mine" class="hint"></p>
+        </fieldset>
+
+        <div class="start-block">
+          <button type="submit" class="btn primary" id="start-btn">开始</button>
+          <p id="chase" class="hint"></p>
+        </div>
+      </form>
+
+      <aside class="records" aria-labelledby="record-title">
+        <h2 id="record-title" class="eyebrow">记录</h2>
+        <p id="record-heading" class="hint record-lead"></p>
+        <p class="eyebrow device-label">本机最快</p>
+        <p class="device-time" id="device-time">—</p>
+        <p class="device-meta" id="device-meta"></p>
+
+        <div class="tabs" role="tablist" aria-label="排名方式">
+          <button type="button" id="tab-setting" role="tab" aria-selected="true" aria-controls="panel-setting">这个设置</button>
+          <button type="button" id="tab-name" role="tab" aria-selected="false" aria-controls="panel-name" tabindex="-1">按昵称</button>
+        </div>
+        <div id="panel-setting" role="tabpanel" aria-labelledby="tab-setting">
+          <p id="rank-empty" class="hint">这个设置还没有昵称成绩。</p>
+          <div id="rank-head" class="rank-head" hidden>
+            <span>名次</span>
+            <span>昵称</span>
+            <span>PB</span>
+            <span class="when">日期</span>
+          </div>
+          <ol id="rank-list" class="ranks"></ol>
+        </div>
+        <div id="panel-name" role="tabpanel" aria-labelledby="tab-name" hidden>
+          <p id="archive-empty" class="hint" hidden></p>
+          <label class="select-label" for="archive-name">查看昵称</label>
+          <select id="archive-name"></select>
+          <ul id="archive-list" class="archive"></ul>
+        </div>
+        <div class="clear-box">
+          <button type="button" class="btn texty" id="clear-ask">清除本机记录</button>
+          <div id="clear-confirm" class="clear-confirm" hidden>
+            <span>清除这台浏览器里的全部最好成绩。</span>
+            <button type="button" class="btn ghost" id="clear-yes">确认清除</button>
+            <button type="button" class="btn ghost" id="clear-no">取消</button>
+          </div>
+        </div>
+      </aside>
+
+      <p class="foot">每种选择分开记最快成绩：玩法、边长、计时、点过之后可见或变淡。匀速旋转的快慢每局随机，记录旁边会写上那一局的转速。同一昵称在每种设置下保留自己的最好成绩，并按这个成绩排名。</p>
+    </div>
+  </div>
+
+  <section id="play" aria-label="玩法区" hidden tabindex="-1">
+    <div class="play-top">
+      <p id="play-config" class="play-config"></p>
+      <button type="button" class="btn ghost" id="quit">放弃</button>
+    </div>
+    <div id="quit-bar" class="quit-bar" hidden>
+      <span>离开后这一局不记成绩。</span>
+      <button type="button" class="btn ghost" id="quit-yes">离开</button>
+      <button type="button" class="btn ghost" id="quit-no">继续</button>
+    </div>
+
+    <div class="hud">
+      <div>
+        <div class="clock-line">
+          <span id="clock" class="clock is-frozen">00.00</span>
+          <span class="unit">秒</span>
+        </div>
+        <p id="clock-caption" class="caption"><span id="clock-dot" class="dot" aria-hidden="true"></span><span id="clock-caption-text">准备</span></p>
+      </div>
+      <div class="hud-next">
+        <p id="next-label" class="caption">下一个</p>
+        <p id="next-num" class="next-num">1</p>
+        <p id="progress-count" class="caption">0 / 25</p>
+      </div>
+    </div>
+    <p id="hud-note" class="hud-note" aria-live="polite"></p>
+    <div class="meter" aria-hidden="true"><span id="progress-bar"></span></div>
+
+    <div id="result" class="result" hidden>
+      <div class="result-head">
+        <h2 id="result-title" tabindex="-1">完成</h2>
+        <div id="result-seal" class="stamp" hidden>最快</div>
+      </div>
+      <p id="result-detail"></p>
+      <p id="result-delta"></p>
+      <p id="result-extra"></p>
+      <div class="actions">
+        <button type="button" class="btn primary" id="again">再来一局</button>
+        <button type="button" class="btn ghost" id="to-home">回首页</button>
+      </div>
+    </div>
+
+    <div id="stage" class="stage">
+      <div id="board" class="board" role="group" aria-label="舒尔特方格"></div>
+    </div>
+    <p id="live" class="sr" aria-live="polite"></p>
+  </section>
+</main>
+
+<script>
+(function () {
+  const STORAGE_KEY = "schulte-grid-v1";
+
+  const home = document.getElementById("home");
+  const play = document.getElementById("play");
+  const form = document.getElementById("setup");
+  const nickInput = document.getElementById("nick");
+  const nickPicks = document.getElementById("nick-picks");
+  const nickPickList = document.getElementById("nick-pick-list");
+  const sizeMeta = document.getElementById("size-meta");
+  const mine = document.getElementById("mine");
+  const chase = document.getElementById("chase");
+  const startBtn = document.getElementById("start-btn");
+  const recordHeading = document.getElementById("record-heading");
+  const deviceTime = document.getElementById("device-time");
+  const deviceMeta = document.getElementById("device-meta");
+  const tabSetting = document.getElementById("tab-setting");
+  const tabName = document.getElementById("tab-name");
+  const panelSetting = document.getElementById("panel-setting");
+  const panelName = document.getElementById("panel-name");
+  const rankList = document.getElementById("rank-list");
+  const rankEmpty = document.getElementById("rank-empty");
+  const rankHead = document.getElementById("rank-head");
+  const archiveSelect = document.getElementById("archive-name");
+  const archiveList = document.getElementById("archive-list");
+  const archiveEmpty = document.getElementById("archive-empty");
+  const archiveLabel = document.querySelector('label[for="archive-name"]');
+  const clearAsk = document.getElementById("clear-ask");
+  const clearConfirm = document.getElementById("clear-confirm");
+  const clearYes = document.getElementById("clear-yes");
+  const clearNo = document.getElementById("clear-no");
+  const playConfig = document.getElementById("play-config");
+  const quit = document.getElementById("quit");
+  const quitBar = document.getElementById("quit-bar");
+  const quitYes = document.getElementById("quit-yes");
+  const quitNo = document.getElementById("quit-no");
+  const clock = document.getElementById("clock");
+  const clockDot = document.getElementById("clock-dot");
+  const clockCaptionText = document.getElementById("clock-caption-text");
+  const nextLabel = document.getElementById("next-label");
+  const nextNum = document.getElementById("next-num");
+  const progressCount = document.getElementById("progress-count");
+  const progressBar = document.getElementById("progress-bar");
+  const hudNote = document.getElementById("hud-note");
+  const live = document.getElementById("live");
+  const result = document.getElementById("result");
+  const resultTitle = document.getElementById("result-title");
+  const resultSeal = document.getElementById("result-seal");
+  const resultDetail = document.getElementById("result-detail");
+  const resultDelta = document.getElementById("result-delta");
+  const resultExtra = document.getElementById("result-extra");
+  const again = document.getElementById("again");
+  const toHome = document.getElementById("to-home");
+  const stage = document.getElementById("stage");
+  const board = document.getElementById("board");
+
+  const whenFormat = new Intl.DateTimeFormat("zh-CN", {
+    timeZone: "Asia/Shanghai",
+    month: "numeric",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  });
+
+  let db = load();
+  let session = null;
+  let sessionSeq = 0;
+  let archivePick = "";
+  const wrongTimers = new WeakMap();
+
+  function fresh() {
+    return { v: 1, last: {}, boards: {} };
+  }
+
+  function load() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return fresh();
+      const data = JSON.parse(raw);
+      if (!data || data.v !== 1 || !data.boards || typeof data.boards !== "object" || Array.isArray(data.boards)) {
+        return fresh();
+      }
+      data.last = data.last && typeof data.last === "object" ? data.last : {};
+      if (renameVanish(data)) {
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch (err) { /* 记下迁移失败时，下一局仍会按变淡来玩。 */ }
+      }
+      return data;
+    } catch (err) {
+      return fresh();
+    }
+  }
+
+  function save() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
+    } catch (err) {
+      /* 隐私模式或配额不足时，这一局仍可玩，只是记不住。 */
+    }
+  }
+
+  function renameVanish(data) {
+    let changed = false;
+    if (data.last && data.last.reveal === "vanish") {
+      data.last.reveal = "fade";
+      changed = true;
+    }
+    Object.keys(data.boards).forEach(function (key) {
+      const parts = key.split("|");
+      if (parts[3] !== "vanish") return;
+      parts[3] = "fade";
+      const next = parts.join("|");
+      if (!data.boards[next]) data.boards[next] = data.boards[key];
+      delete data.boards[key];
+      changed = true;
+    });
+    return changed;
+  }
+
+  function normalizeNick(raw) {
+    const clean = String(raw || "").replace(/[\u0000-\u001F\u007F]/g, "").replace(/\s+/g, " ").trim();
+    return Array.from(clean).slice(0, 16).join("");
+  }
+
+  function currentConfig() {
+    const data = new FormData(form);
+    let size = Number(data.get("size"));
+    if (!Number.isInteger(size) || size < 1 || size > 10) size = 5;
+    let timing = data.get("timing") === "relaxed" ? "relaxed" : "standard";
+    if (size <= 3) timing = "standard";
+    const reveal = data.get("reveal") === "fade" ? "fade" : "stay";
+    const picked = data.get("play");
+    return {
+      play: knownPlay(picked) || "classic",
+      size: size,
+      timing: timing,
+      reveal: reveal,
+      nickname: normalizeNick(nickInput.value),
+    };
+  }
+
+  function configKey(cfg) {
+    return cfg.play + "|" + cfg.size + "|" + cfg.timing + "|" + cfg.reveal;
+  }
+
+  function parseKey(key) {
+    const parts = String(key).split("|");
+    if (parts.length !== 4 || !knownPlay(parts[0])) return null;
+    const size = Number(parts[1]);
+    const timing = parts[2];
+    const reveal = parts[3];
+    if (!Number.isInteger(size) || size < 1 || size > 10) return null;
+    if (timing !== "standard" && timing !== "relaxed") return null;
+    if (reveal !== "stay" && reveal !== "fade") return null;
+    if (size <= 3 && timing === "relaxed") return null;
+    return { play: parts[0], size: size, timing: timing, reveal: reveal };
+  }
+
+  function knownPlay(value) {
+    if (value === "classic" || value === "reshuffle" || value === "spin" || value === "idle") return value;
+    return "";
+  }
+
+  function describe(cfg) {
+    const names = { classic: "标准方格", reshuffle: "每点重排", spin: "匀速旋转", idle: "一秒重排" };
+    const play = names[cfg.play] || "标准方格";
+    const timing = cfg.timing === "relaxed" ? "轻松计时" : "标准计时";
+    const reveal = cfg.reveal === "fade" ? "点后变淡" : "点后可见";
+    return play + " · " + cfg.size + "×" + cfg.size + " · " + timing + " · " + reveal;
+  }
+
+  function spinPhrase(spin) {
+    if (!spin || typeof spin.dps !== "number" || !Number.isFinite(spin.dps) || spin.dps <= 0) return "";
+    const period = 360 / spin.dps;
+    if (period >= 1.5) return "来回转向，约 " + String(Math.max(1, Math.round(period))) + " 秒一圈";
+    const rev = spin.dps / 360;
+    return "来回转向，约每秒 " + (rev >= 10 ? rev.toFixed(0) : rev.toFixed(1)) + " 圈";
+  }
+
+  function withSpin(text, spin) {
+    const phrase = spinPhrase(spin);
+    return phrase ? text + " · " + phrase : text;
+  }
+
+  function rollSpin() {
+    const min = 10;
+    const max = 180;
+    const dps = Math.min(max, Math.round(min * Math.pow(max / min, Math.random()) * 10) / 10);
+    return { dps: dps, dir: Math.random() < 0.5 ? -1 : 1 };
+  }
+
+  function formatTime(ms, mode) {
+    const safe = Number.isFinite(ms) ? Math.max(0, ms) : 0;
+    const csTotal = mode === "floor" ? Math.floor(safe / 10) : Math.round(safe / 10);
+    const cs = csTotal % 100;
+    const totalSec = Math.floor(csTotal / 100);
+    const sec = totalSec % 60;
+    const min = Math.floor(totalSec / 60);
+    const csText = String(cs).padStart(2, "0");
+    const secText = String(sec).padStart(2, "0");
+    if (min > 0) return min + ":" + secText + "." + csText;
+    return secText + "." + csText;
+  }
+
+  function quantize(ms) {
+    return Math.max(0, Math.round(ms / 10) * 10);
+  }
+
+  function formatWhen(ts) {
+    return whenFormat.format(ts);
+  }
+
+  function syncTiming() {
+    const size = Number(new FormData(form).get("size")) || 5;
+    const relaxed = form.querySelector('input[name="timing"][value="relaxed"]');
+    const standard = form.querySelector('input[name="timing"][value="standard"]');
+    const locked = size <= 3;
+    relaxed.disabled = locked;
+    if (locked && relaxed.checked) standard.checked = true;
+  }
+
+  function persistLast() {
+    const cfg = currentConfig();
+    db.last = {
+      play: cfg.play,
+      size: cfg.size,
+      timing: cfg.timing,
+      reveal: cfg.reveal,
+      nickname: nickInput.value.slice(0, 16),
+    };
+    save();
+  }
+
+  function applyLast() {
+    const last = db.last || {};
+    let size = Number(last.size);
+    if (!Number.isInteger(size) || size < 1 || size > 10) size = 5;
+    let timing = last.timing === "relaxed" ? "relaxed" : "standard";
+    if (size <= 3) timing = "standard";
+    const reveal = last.reveal === "fade" ? "fade" : "stay";
+    form.elements.size.value = String(size);
+    form.elements.timing.value = timing;
+    form.elements.reveal.value = reveal;
+    form.elements.play.value = knownPlay(last.play) || "classic";
+    nickInput.value = typeof last.nickname === "string" ? last.nickname.slice(0, 16) : "";
+    syncTiming();
+  }
+
+  function rankedNames(board) {
+    const rows = [];
+    const names = board && board.names ? board.names : {};
+    Object.keys(names).forEach(function (name) {
+      const rec = names[name];
+      if (!rec || typeof rec.ms !== "number" || !Number.isFinite(rec.ms)) return;
+      rows.push({
+        name: name,
+        ms: rec.ms,
+        at: rec.at || 0,
+        runs: rec.runs || 1,
+        spin: rec.spin || null,
+      });
+    });
+    rows.sort(function (a, b) {
+      return a.ms - b.ms || a.at - b.at || a.name.localeCompare(b.name, "zh");
+    });
+    let lastMs = null;
+    let lastRank = 0;
+    rows.forEach(function (row, index) {
+      if (row.ms !== lastMs) {
+        lastRank = index + 1;
+        lastMs = row.ms;
+      }
+      row.rank = lastRank;
+    });
+    return rows;
+  }
+
+  function allNicknames() {
+    const set = new Set();
+    Object.keys(db.boards).forEach(function (key) {
+      const names = db.boards[key] && db.boards[key].names;
+      if (!names) return;
+      Object.keys(names).forEach(function (name) { set.add(name); });
+    });
+    return Array.from(set).sort(function (a, b) { return a.localeCompare(b, "zh"); });
+  }
+
+  function recordsForName(name) {
+    const rows = [];
+    Object.keys(db.boards).forEach(function (key) {
+      const board = db.boards[key];
+      const rec = board && board.names ? board.names[name] : null;
+      const cfg = parseKey(key);
+      if (!cfg || !rec || typeof rec.ms !== "number") return;
+      rows.push({ cfg: cfg, ms: rec.ms, at: rec.at || 0, runs: rec.runs || 1, spin: rec.spin || null });
+    });
+    rows.sort(function (a, b) {
+      return a.cfg.size - b.cfg.size
+        || (a.cfg.play < b.cfg.play ? -1 : a.cfg.play > b.cfg.play ? 1 : 0)
+        || (a.cfg.timing < b.cfg.timing ? -1 : a.cfg.timing > b.cfg.timing ? 1 : 0)
+        || (a.cfg.reveal < b.cfg.reveal ? -1 : a.cfg.reveal > b.cfg.reveal ? 1 : 0);
+    });
+    return rows;
+  }
+
+  function paintSetup() {
+    const cfg = currentConfig();
+    const board = db.boards[configKey(cfg)] || null;
+    sizeMeta.textContent = cfg.size + " × " + cfg.size + "，共 " + (cfg.size * cfg.size) + " 格";
+    recordHeading.textContent = describe(cfg);
+
+    if (board && board.device && typeof board.device.ms === "number") {
+      const who = board.device.nickname ? board.device.nickname : "未署名";
+      chase.textContent = withSpin("本机最快 " + formatTime(board.device.ms) + " 秒 · " + who, board.device.spin);
+    } else {
+      chase.textContent = "这个设置还没有最快记录。这一局会成为第一个。";
+    }
+
+    if (!cfg.nickname) {
+      mine.textContent = "昵称可以留空。写上之后，这个名字会按当前设置进入排名。";
+    } else {
+      const rec = board && board.names ? board.names[cfg.nickname] : null;
+      if (!rec) {
+        mine.textContent = "「" + cfg.nickname + "」在这个设置下还没有最好成绩。";
+      } else {
+        const row = rankedNames(board).find(function (item) { return item.name === cfg.nickname; });
+        mine.textContent = "「" + cfg.nickname + "」的最好成绩 " + formatTime(rec.ms) + " 秒，排名第 " + row.rank + "，完成 " + (rec.runs || 1) + " 次。";
+      }
+    }
+  }
+
+  function renderDevice(board) {
+    if (!board || !board.device || typeof board.device.ms !== "number") {
+      deviceTime.textContent = "—";
+      deviceMeta.textContent = "这个设置还没有成绩。";
+      return;
+    }
+    deviceTime.textContent = "";
+    const strong = document.createElement("span");
+    strong.textContent = formatTime(board.device.ms);
+    const unit = document.createElement("span");
+    unit.className = "unit";
+    unit.textContent = "秒";
+    deviceTime.append(strong, unit);
+    const who = board.device.nickname ? board.device.nickname : "未署名";
+    deviceMeta.textContent = withSpin(who + " · " + formatWhen(board.device.at || Date.now()), board.device.spin);
+  }
+
+  function renderRanks(board) {
+    rankList.replaceChildren();
+    const rows = rankedNames(board);
+    rankEmpty.hidden = rows.length > 0;
+    rankHead.hidden = rows.length === 0;
+    rows.forEach(function (row) {
+      const li = document.createElement("li");
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "rank-row" + (row.rank === 1 ? " is-first" : "");
+      const pace = spinPhrase(row.spin);
+      button.setAttribute("aria-label", "第 " + row.rank + " 名 " + row.name + "，" + formatTime(row.ms) + " 秒" + (pace ? "，" + pace : "") + "，查看全部最好成绩");
+      button.addEventListener("click", function () {
+        nickInput.value = row.name;
+        archivePick = row.name;
+        persistLast();
+        selectTab("name");
+        renderRecords();
+      });
+
+      const place = document.createElement("span");
+      place.className = "place";
+      place.textContent = String(row.rank).padStart(2, "0");
+      const who = document.createElement("span");
+      who.className = "who";
+      who.textContent = row.name;
+      const time = document.createElement("span");
+      time.className = "pb";
+      time.textContent = formatTime(row.ms);
+      const when = document.createElement("time");
+      when.className = "when";
+      when.dateTime = new Date(row.at || Date.now()).toISOString();
+      when.textContent = withSpin(formatWhen(row.at || Date.now()), row.spin);
+      button.append(place, who, time, when);
+      li.appendChild(button);
+      rankList.appendChild(li);
+    });
+  }
+
+  function renderArchive() {
+    const names = allNicknames();
+    if (!names.length) {
+      archiveEmpty.hidden = false;
+      archiveEmpty.textContent = "还没有人留下昵称。完成一局时填上名字，就能在这里看这个人的全部最好成绩。";
+      archiveSelect.hidden = true;
+      archiveLabel.hidden = true;
+      archiveList.replaceChildren();
+      return;
+    }
+    archiveEmpty.hidden = true;
+    archiveSelect.hidden = false;
+    archiveLabel.hidden = false;
+    const typed = normalizeNick(nickInput.value);
+    if (!names.includes(archivePick)) {
+      archivePick = names.includes(typed) ? typed : names[0];
+    }
+    const signature = names.join("\u0000");
+    if (archiveSelect.dataset.sig !== signature) {
+      archiveSelect.dataset.sig = signature;
+      archiveSelect.replaceChildren();
+      names.forEach(function (name) {
+        const opt = document.createElement("option");
+        opt.value = name;
+        opt.textContent = name;
+        archiveSelect.appendChild(opt);
+      });
+    }
+    archiveSelect.value = archivePick;
+    archiveList.replaceChildren();
+    recordsForName(archivePick).forEach(function (row) {
+      const li = document.createElement("li");
+      li.className = "archive-row";
+      const cfg = document.createElement("span");
+      cfg.className = "who";
+      cfg.textContent = describe(row.cfg);
+      const time = document.createElement("span");
+      time.className = "pb";
+      time.textContent = formatTime(row.ms);
+      const meta = document.createElement("span");
+      meta.className = "when";
+      meta.textContent = withSpin(row.runs + " 次 · " + formatWhen(row.at), row.spin);
+      li.append(cfg, time, meta);
+      archiveList.appendChild(li);
+    });
+  }
+
+  function renderNickPicks() {
+    const names = allNicknames();
+    if (!names.length) {
+      nickPicks.hidden = true;
+      nickPickList.replaceChildren();
+      delete nickPickList.dataset.sig;
+      return;
+    }
+    nickPicks.hidden = false;
+    const current = normalizeNick(nickInput.value);
+    const signature = names.join("\0") + "\0" + current;
+    if (nickPickList.dataset.sig === signature) return;
+    nickPickList.dataset.sig = signature;
+    nickPickList.replaceChildren();
+    names.forEach(function (name) {
+      const button = document.createElement("button");
+      button.type = "button";
+      const on = name === current;
+      button.className = "pick" + (on ? " is-on" : "");
+      button.textContent = name;
+      button.setAttribute("aria-pressed", on ? "true" : "false");
+      button.addEventListener("click", function () {
+        nickInput.value = name;
+        persistLast();
+        renderRecords();
+      });
+      nickPickList.appendChild(button);
+    });
+  }
+
+  function renderRecords() {
+    const cfg = currentConfig();
+    const board = db.boards[configKey(cfg)] || null;
+    paintSetup();
+    renderNickPicks();
+    renderDevice(board);
+    renderRanks(board);
+    renderArchive();
+    const hasBoards = Object.keys(db.boards).length > 0;
+    if (clearConfirm.hidden) clearAsk.hidden = !hasBoards;
+  }
+
+  function selectTab(id) {
+    const setting = id === "setting";
+    tabSetting.setAttribute("aria-selected", setting ? "true" : "false");
+    tabName.setAttribute("aria-selected", setting ? "false" : "true");
+    tabSetting.tabIndex = setting ? 0 : -1;
+    tabName.tabIndex = setting ? -1 : 0;
+    panelSetting.hidden = !setting;
+    panelName.hidden = setting;
+    if (!setting) renderArchive();
+  }
+
+  function recordRun(cfg, ms) {
+    const key = configKey(cfg);
+    const board = db.boards[key] || { device: null, names: {}, anon: null };
+    board.names = board.names || {};
+    const at = Date.now();
+    const nickname = cfg.nickname;
+    const hadDevice = !!(board.device && typeof board.device.ms === "number");
+    const isDeviceBest = !hadDevice || ms < board.device.ms;
+    const pace = cfg.play === "spin" && cfg.spin ? { dps: cfg.spin.dps, dir: cfg.spin.dir < 0 ? -1 : 1 } : null;
+    if (isDeviceBest) {
+      board.device = { ms: ms, nickname: nickname, at: at };
+      if (pace) board.device.spin = pace;
+    }
+
+    const bucket = nickname ? board.names[nickname] : board.anon;
+    const hadPersonal = !!(bucket && typeof bucket.ms === "number");
+    const previousPersonalMs = hadPersonal ? bucket.ms : null;
+    const runs = ((bucket && bucket.runs) || 0) + 1;
+    const isPersonalBest = !hadPersonal || ms < bucket.ms;
+    const nextBucket = isPersonalBest
+      ? { ms: ms, at: at, runs: runs }
+      : { ms: bucket.ms, at: bucket.at, runs: runs };
+    if (isPersonalBest && pace) nextBucket.spin = pace;
+    else if (!isPersonalBest && bucket.spin) nextBucket.spin = bucket.spin;
+    if (nickname) board.names[nickname] = nextBucket;
+    else board.anon = nextBucket;
+
+    db.boards[key] = board;
+    save();
+
+    const ranks = rankedNames(board);
+    const mineRow = nickname ? ranks.find(function (row) { return row.name === nickname; }) : null;
+    return {
+      ms: ms,
+      nickname: nickname,
+      isDeviceBest: isDeviceBest,
+      firstDevice: !hadDevice,
+      isPersonalBest: isPersonalBest,
+      firstPersonal: !hadPersonal,
+      previousPersonalMs: previousPersonalMs,
+      runs: runs,
+      rank: mineRow ? mineRow.rank : null,
+      nameCount: ranks.length,
+    };
+  }
+
+  function show(view) {
+    document.body.dataset.view = view;
+    home.hidden = view !== "home";
+    play.hidden = view !== "play";
+    window.scrollTo(0, 0);
+  }
+
+  function say(text, alert) {
+    hudNote.textContent = text;
+    live.textContent = text;
+    hudNote.classList.remove("is-alert");
+    if (alert) {
+      void hudNote.offsetWidth;
+      hudNote.classList.add("is-alert");
+    }
+  }
+
+  function setClock(ms, mode) {
+    const text = formatTime(ms, mode);
+    if (clock.textContent !== text) clock.textContent = text;
+  }
+
+  function paintHud() {
+    if (!session) return;
+    const cfg = session.config;
+    const waiting = cfg.timing === "relaxed" && !session.running && !session.finished;
+    clockDot.classList.toggle("is-on", session.running);
+    clock.classList.toggle("is-frozen", waiting);
+    clock.classList.toggle("is-final", !!session.finished);
+    clockCaptionText.textContent = session.finished ? "完成" : waiting ? "点中 1 开始" : "计时中";
+    nextLabel.textContent = waiting ? "先找出" : session.finished ? "进度" : "下一个";
+    nextNum.textContent = session.finished ? "完" : String(session.expected);
+    const found = Math.min(session.total, session.expected - 1);
+    progressCount.textContent = found + " / " + session.total;
+    playConfig.textContent = withSpin(describe(cfg) + (cfg.nickname ? " · " + cfg.nickname : ""), cfg.spin);
+  }
+
+  function paintProgress() {
+    if (!session) return;
+    const found = Math.min(session.total, session.expected - 1);
+    progressBar.style.width = ((found / session.total) * 100) + "%";
+  }
+
+  function shuffle(count) {
+    const values = [];
+    for (let i = 1; i <= count; i += 1) values.push(i);
+    for (let i = count - 1; i > 0; i -= 1) {
+      const j = Math.floor(Math.random() * (i + 1));
+      const tmp = values[i];
+      values[i] = values[j];
+      values[j] = tmp;
+    }
+    return values;
+  }
+
+  function buildBoard(numbers) {
+    const n = String(session.config.size);
+    stage.style.setProperty("--n", n);
+    board.replaceChildren();
+    board.style.setProperty("--n", n);
+    board.setAttribute("aria-label", session.config.size + " 乘 " + session.config.size + " 的舒尔特方格");
+    const frag = document.createDocumentFragment();
+    numbers.forEach(function (n) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "cell";
+      btn.dataset.n = String(n);
+      btn.textContent = String(n);
+      btn.setAttribute("aria-label", String(n));
+      if (session.found[n]) {
+        btn.disabled = true;
+        btn.classList.add(session.config.reveal === "fade" ? "is-fade" : "is-done", "is-settled");
+        btn.setAttribute("aria-label", "数字 " + n + "，已点过");
+      }
+      frag.appendChild(btn);
+    });
+    board.appendChild(frag);
+  }
+
+  function startClock(now) {
+    if (!session || session.running || session.finished) return;
+    session.start = now;
+    session.running = true;
+    session.raf = requestAnimationFrame(loop);
+    paintHud();
+  }
+
+  function loop(now) {
+    if (!session || !session.running) return;
+    setClock(now - session.start, "floor");
+    session.raf = requestAnimationFrame(loop);
+  }
+
+  function markDone(btn) {
+    btn.disabled = true;
+    if (session.config.reveal === "fade") {
+      btn.classList.add("is-fade");
+      btn.setAttribute("aria-label", "数字 " + btn.dataset.n + "，已点过");
+    } else {
+      btn.classList.add("is-done");
+      btn.setAttribute("aria-label", "数字 " + btn.dataset.n + "，已点过");
+    }
+  }
+
+  function flashWrong(btn) {
+    btn.classList.remove("is-wrong");
+    void btn.offsetWidth;
+    btn.classList.add("is-wrong");
+    const prev = wrongTimers.get(btn);
+    if (prev) clearTimeout(prev);
+    wrongTimers.set(btn, setTimeout(function () { btn.classList.remove("is-wrong"); }, 520));
+  }
+
+  function lockBoard() {
+    board.querySelectorAll("button.cell").forEach(function (btn) { btn.disabled = true; });
+  }
+
+  function showResult(summary) {
+    result.hidden = false;
+    let title = "完成";
+    if (summary.isDeviceBest) title = summary.firstDevice ? "记下了本机最快" : "新的本机最快";
+    else if (summary.isPersonalBest) title = summary.firstPersonal ? "记下了个人最好" : "刷新了个人最好";
+    resultTitle.textContent = title;
+    resultTitle.classList.toggle("is-hot", summary.isDeviceBest || summary.isPersonalBest);
+    const stampOn = summary.isDeviceBest || summary.isPersonalBest;
+    resultSeal.hidden = !stampOn;
+    resultSeal.textContent = summary.isDeviceBest ? "最快" : "最好";
+
+    if (summary.nickname) {
+      resultDetail.textContent = "「" + summary.nickname + "」在这个设置的昵称排名里排第 " + summary.rank + "，共 " + summary.nameCount + " 人。";
+    } else {
+      resultDetail.textContent = "这局记在未署名下，已计入本机最快。下一局写上昵称，就会出现在排名里。";
+    }
+
+    if (summary.previousPersonalMs == null) {
+      resultDelta.textContent = "用时 " + formatTime(summary.ms) + " 秒。这是你在这个设置下的第一局。";
+    } else if (summary.ms < summary.previousPersonalMs) {
+      resultDelta.textContent = "用时 " + formatTime(summary.ms) + " 秒，比你之前的最好快了 " + formatTime(summary.previousPersonalMs - summary.ms) + " 秒。";
+    } else if (summary.ms === summary.previousPersonalMs) {
+      resultDelta.textContent = "用时 " + formatTime(summary.ms) + " 秒，与你的最好成绩持平。";
+    } else {
+      resultDelta.textContent = "用时 " + formatTime(summary.ms) + " 秒，离你的最好还差 " + formatTime(summary.ms - summary.previousPersonalMs) + " 秒。";
+    }
+    resultExtra.textContent = withSpin("第 " + summary.runs + " 次完成 · " + describe(session.config), session.config.spin);
+    quit.hidden = true;
+    resultTitle.focus();
+  }
+
+  function stopSpinLoop() {
+    if (!session || !session.spinRaf) return;
+    cancelAnimationFrame(session.spinRaf);
+    session.spinRaf = 0;
+  }
+
+  function nextSpinHold(dps) {
+    const turn = 360 / dps;
+    const turns = 0.55 + Math.random() * 0.55;
+    return Math.min(3500, Math.max(1200, turns * turn * 1000));
+  }
+
+  function beginSpin() {
+    if (!session || !session.spin || session.finished || session.spinRaf) return;
+    const spun = performance.now();
+    session.spinLast = spun;
+    session.spinFlipAt = spun + nextSpinHold(session.spin.dps);
+    session.spinRaf = requestAnimationFrame(spinLoop);
+  }
+
+  function spinLoop(now) {
+    if (!session || !session.spin || session.finished) return;
+    const last = session.spinLast || now;
+    const dt = Math.max(0, (now - last) / 1000);
+    session.spinLast = now;
+    session.spinAngle += session.spinDir * session.spin.dps * dt;
+    board.style.transform = "rotate(" + session.spinAngle.toFixed(2) + "deg)";
+    if (now >= session.spinFlipAt) {
+      session.spinDir = session.spinDir < 0 ? 1 : -1;
+      session.spinFlipAt = now + nextSpinHold(session.spin.dps);
+    }
+    session.spinRaf = requestAnimationFrame(spinLoop);
+  }
+
+  const IDLE_MS = 1000;
+
+  function clearIdle() {
+    if (!session || !session.idleTimer) return;
+    clearTimeout(session.idleTimer);
+    session.idleTimer = 0;
+  }
+
+  function armIdle() {
+    clearIdle();
+    if (!session || session.finished || session.config.play !== "idle") return;
+    if (session.config.timing === "relaxed" && !session.running) return;
+    const seq = session.seq;
+    session.idleTimer = setTimeout(function () {
+      if (!session || session.seq !== seq || session.finished || session.config.play !== "idle") return;
+      session.idleTimer = 0;
+      session.order = shuffle(session.total);
+      buildBoard(session.order);
+      const waiting = session.config.timing === "relaxed" && !session.running;
+      say(waiting ? "方格重排了，先点 1。" : "方格重排了，下一个 " + session.expected + "。");
+      armIdle();
+    }, IDLE_MS);
+  }
+
+  function finish(now) {
+    const ms = quantize(now - session.start);
+    session.running = false;
+    session.finished = true;
+    if (session.raf) cancelAnimationFrame(session.raf);
+    session.raf = 0;
+    stopSpinLoop();
+    clearIdle();
+    setClock(ms, "round");
+    paintHud();
+    paintProgress();
+    lockBoard();
+    const summary = recordRun(session.config, ms);
+    showResult(summary);
+    say("完成，用时 " + formatTime(ms) + " 秒。");
+  }
+
+  function onCell(btn) {
+    if (!session || session.finished || btn.disabled) return;
+    quitBar.hidden = true;
+    const value = Number(btn.dataset.n);
+    const now = performance.now();
+    if (value !== session.expected) {
+      flashWrong(btn);
+      if (session.config.timing === "relaxed" && !session.running) say("点错了，先点 1。", true);
+      else say("点错了，要找的是 " + session.expected + "。", true);
+      return;
+    }
+
+    const startedNow = session.config.timing === "relaxed" && !session.running;
+    if (session.config.timing === "standard" && !session.running) startClock(now);
+    if (startedNow) startClock(now);
+
+    session.found[value] = true;
+    session.expected += 1;
+    paintProgress();
+    if (session.expected > session.total) {
+      markDone(btn);
+      finish(now);
+      return;
+    }
+    if (session.config.play === "reshuffle") {
+      session.order = shuffle(session.total);
+      buildBoard(session.order);
+    } else {
+      markDone(btn);
+    }
+    if (session.config.play === "idle") armIdle();
+    if (startedNow && session.config.play === "spin") beginSpin();
+    if (startedNow && session.config.play === "idle") {
+      say("计时开始，一秒没点中就会重排。下一个 " + session.expected);
+    } else if (startedNow && session.config.play === "spin") {
+      say("计时开始，方格开始转动。下一个 " + session.expected);
+    } else {
+      say(startedNow ? "计时开始，下一个 " + session.expected : "下一个 " + session.expected);
+    }
+    paintHud();
+  }
+
+  function startGame() {
+    const cfg = currentConfig();
+    if (cfg.play === "spin") cfg.spin = rollSpin();
+    persistLast();
+    const seq = ++sessionSeq;
+    if (session && session.raf) cancelAnimationFrame(session.raf);
+    stopSpinLoop();
+    clearIdle();
+    board.style.transform = "";
+    stage.classList.toggle("is-spin", cfg.play === "spin");
+    session = {
+      seq: seq,
+      config: cfg,
+      expected: 1,
+      total: cfg.size * cfg.size,
+      found: {},
+      order: shuffle(cfg.size * cfg.size),
+      start: 0,
+      running: false,
+      finished: false,
+      raf: 0,
+      spin: cfg.spin || null,
+      spinT0: performance.now(),
+      spinDir: cfg.spin ? (cfg.spin.dir < 0 ? -1 : 1) : 1,
+      spinAngle: 0,
+      spinLast: 0,
+      spinFlipAt: 0,
+      spinRaf: 0,
+      idleTimer: 0,
+    };
+    buildBoard(session.order);
+    if (cfg.play === "spin") {
+      board.setAttribute("aria-label", cfg.size + " 乘 " + cfg.size + " 的旋转舒尔特方格");
+      if (cfg.timing !== "relaxed") beginSpin();
+    }
+    if (cfg.play === "idle" && cfg.timing !== "relaxed") armIdle();
+    result.hidden = true;
+    quitBar.hidden = true;
+    quit.hidden = false;
+    hudNote.textContent = "";
+    setClock(0, "round");
+    paintHud();
+    paintProgress();
+    show("play");
+    play.focus();
+    const pace = cfg.play === "spin" ? spinPhrase(cfg.spin) + "。" : "";
+    if (cfg.timing === "standard") {
+      const idleLead = cfg.play === "idle" ? "一秒没点中就会重排。" : "";
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () {
+          if (!session || session.seq !== seq || session.finished || session.running) return;
+          startClock(performance.now());
+          say(pace + idleLead + "方格已出现，计时开始。");
+        });
+      });
+    } else if (cfg.play === "idle") {
+      say("找出数字 1。点中之后开始计时，一秒没点中就会重排。");
+    } else if (cfg.play === "spin") {
+      say(pace + "找出数字 1。点中之后开始计时并转动。");
+    } else {
+      say("找出数字 1。点中之后开始计时。");
+    }
+  }
+
+  function goHome() {
+    if (session && session.raf) cancelAnimationFrame(session.raf);
+    stopSpinLoop();
+    clearIdle();
+    board.style.transform = "";
+    stage.classList.remove("is-spin");
+    session = null;
+    result.hidden = true;
+    quitBar.hidden = true;
+    show("home");
+    renderRecords();
+    startBtn.focus();
+  }
+
+  function askQuit() {
+    if (!session || session.finished) {
+      goHome();
+      return;
+    }
+    const started = session.running || session.expected > 1;
+    if (!started) {
+      goHome();
+      return;
+    }
+    quitBar.hidden = false;
+    quitYes.focus();
+  }
+
+  form.addEventListener("submit", function (event) {
+    event.preventDefault();
+    startGame();
+  });
+  form.addEventListener("change", function () {
+    syncTiming();
+    persistLast();
+    renderRecords();
+  });
+  nickInput.addEventListener("input", function () {
+    persistLast();
+    renderRecords();
+  });
+  tabSetting.addEventListener("click", function () { selectTab("setting"); });
+  tabName.addEventListener("click", function () { selectTab("name"); });
+  document.querySelector(".tabs").addEventListener("keydown", function (event) {
+    if (event.key !== "ArrowRight" && event.key !== "ArrowLeft") return;
+    event.preventDefault();
+    const next = event.key === "ArrowRight" ? "name" : "setting";
+    selectTab(next);
+    (next === "name" ? tabName : tabSetting).focus();
+  });
+  archiveSelect.addEventListener("change", function () {
+    archivePick = archiveSelect.value;
+    renderArchive();
+  });
+  clearAsk.addEventListener("click", function () {
+    clearAsk.hidden = true;
+    clearConfirm.hidden = false;
+    clearYes.focus();
+  });
+  clearNo.addEventListener("click", function () {
+    clearConfirm.hidden = true;
+    clearAsk.hidden = Object.keys(db.boards).length === 0;
+  });
+  clearYes.addEventListener("click", function () {
+    db.boards = {};
+    archivePick = "";
+    archiveSelect.dataset.sig = "";
+    save();
+    clearConfirm.hidden = true;
+    renderRecords();
+  });
+  board.addEventListener("click", function (event) {
+    const btn = event.target.closest("button.cell");
+    if (!btn || !board.contains(btn)) return;
+    onCell(btn);
+  });
+  quit.addEventListener("click", askQuit);
+  quitYes.addEventListener("click", goHome);
+  quitNo.addEventListener("click", function () {
+    quitBar.hidden = true;
+    play.focus();
+  });
+  again.addEventListener("click", startGame);
+  toHome.addEventListener("click", goHome);
+  document.addEventListener("keydown", function (event) {
+    if (event.key !== "Escape" || document.body.dataset.view !== "play") return;
+    if (!quitBar.hidden) {
+      quitBar.hidden = true;
+      return;
+    }
+    if (session && session.finished) goHome();
+    else askQuit();
+  });
+
+  applyLast();
+  renderRecords();
+})();
+</script>
+</body>
+</html>
