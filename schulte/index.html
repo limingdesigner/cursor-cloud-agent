@@ -755,7 +755,7 @@ legend, .eyebrow {
             <label class="choice">
               <input type="radio" name="play" value="spin">
               <span class="choice-name">匀速旋转</span>
-              <span class="choice-hint">整盘连数字一起匀速转动，一会儿顺时针，一会儿逆时针。快慢每局随机，最慢约 36 秒一圈，最快 2 秒一圈。</span>
+              <span class="choice-hint">一会儿顺时针，一会儿逆时针。最慢约 36 秒一圈，最快 2 秒一圈。轻松模式点中 1 后才转。</span>
             </label>
             <label class="choice">
               <input type="radio" name="play" value="idle">
@@ -1615,6 +1615,14 @@ legend, .eyebrow {
     return Math.min(3500, Math.max(1200, turns * turn * 1000));
   }
 
+  function beginSpin() {
+    if (!session || !session.spin || session.finished || session.spinRaf) return;
+    const spun = performance.now();
+    session.spinLast = spun;
+    session.spinFlipAt = spun + nextSpinHold(session.spin.dps);
+    session.spinRaf = requestAnimationFrame(spinLoop);
+  }
+
   function spinLoop(now) {
     if (!session || !session.spin || session.finished) return;
     const last = session.spinLast || now;
@@ -1701,8 +1709,11 @@ legend, .eyebrow {
       markDone(btn);
     }
     if (session.config.play === "idle") armIdle();
+    if (startedNow && session.config.play === "spin") beginSpin();
     if (startedNow && session.config.play === "idle") {
       say("计时开始，一秒没点中就会重排。下一个 " + session.expected);
+    } else if (startedNow && session.config.play === "spin") {
+      say("计时开始，方格开始转动。下一个 " + session.expected);
     } else {
       say(startedNow ? "计时开始，下一个 " + session.expected : "下一个 " + session.expected);
     }
@@ -1741,11 +1752,8 @@ legend, .eyebrow {
     };
     buildBoard(session.order);
     if (cfg.play === "spin") {
-      const spun = performance.now();
-      session.spinLast = spun;
-      session.spinFlipAt = spun + nextSpinHold(cfg.spin.dps);
       board.setAttribute("aria-label", cfg.size + " 乘 " + cfg.size + " 的旋转舒尔特方格");
-      session.spinRaf = requestAnimationFrame(spinLoop);
+      if (cfg.timing !== "relaxed") beginSpin();
     }
     if (cfg.play === "idle" && cfg.timing !== "relaxed") armIdle();
     result.hidden = true;
@@ -1768,9 +1776,11 @@ legend, .eyebrow {
         });
       });
     } else if (cfg.play === "idle") {
-      say(pace + "找出数字 1。点中之后开始计时，一秒没点中就会重排。");
+      say("找出数字 1。点中之后开始计时，一秒没点中就会重排。");
+    } else if (cfg.play === "spin") {
+      say(pace + "找出数字 1。点中之后开始计时并转动。");
     } else {
-      say(pace + "找出数字 1。点中之后开始计时。");
+      say("找出数字 1。点中之后开始计时。");
     }
   }
 
