@@ -52,7 +52,8 @@ body {
   font-size: 17px;
   line-height: 1.5;
   background:
-    radial-gradient(900px 480px at 50% -10%, rgba(196, 69, 45, 0.16), transparent 55%),
+    radial-gradient(1000px 460px at 50% -12%, rgba(196, 69, 45, 0.2), transparent 56%),
+    radial-gradient(820px 360px at 50% 118%, rgba(96, 52, 28, 0.42), transparent 62%),
     radial-gradient(1200px 720px at 50% 20%, var(--desk-1), var(--desk-0) 68%);
   padding: 28px 16px 48px;
 }
@@ -60,10 +61,190 @@ body::before {
   content: "";
   position: fixed;
   inset: 0;
+  z-index: 1;
   pointer-events: none;
-  opacity: 0.18;
+  opacity: 0.14;
   background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/></filter><rect width='140' height='140' filter='url(%23n)' opacity='0.45'/></svg>");
   mix-blend-mode: overlay;
+}
+.lacquer {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 4.2% 18%, rgba(244, 224, 180, 0.9) 0 2.4px, transparent 3.4px),
+    radial-gradient(circle at 7.4% 41%, rgba(214, 176, 106, 0.75) 0 1.6px, transparent 2.6px),
+    radial-gradient(circle at 2.8% 63%, rgba(244, 224, 180, 0.85) 0 3.1px, transparent 4.2px),
+    radial-gradient(circle at 6.1% 84%, rgba(196, 84, 62, 0.7) 0 2px, transparent 3px),
+    radial-gradient(circle at 12% 93%, rgba(214, 176, 106, 0.8) 0 2.2px, transparent 3.2px),
+    radial-gradient(circle at 96.5% 14%, rgba(244, 224, 180, 0.88) 0 2.6px, transparent 3.6px),
+    radial-gradient(circle at 93.2% 36%, rgba(214, 176, 106, 0.72) 0 1.5px, transparent 2.5px),
+    radial-gradient(circle at 97.4% 57%, rgba(244, 224, 180, 0.86) 0 3px, transparent 4.1px),
+    radial-gradient(circle at 94% 78%, rgba(196, 84, 62, 0.66) 0 2px, transparent 3px),
+    radial-gradient(circle at 90% 94%, rgba(214, 176, 106, 0.78) 0 2.4px, transparent 3.4px),
+    radial-gradient(circle at 24% 3.2%, rgba(244, 224, 180, 0.7) 0 1.8px, transparent 2.8px),
+    radial-gradient(circle at 48% 2.2%, rgba(214, 176, 106, 0.62) 0 1.4px, transparent 2.3px),
+    radial-gradient(circle at 73% 3.6%, rgba(244, 224, 180, 0.74) 0 2px, transparent 3px),
+    radial-gradient(circle at 18% 96.5%, rgba(244, 224, 180, 0.82) 0 2.6px, transparent 3.6px),
+    radial-gradient(circle at 37% 94.2%, rgba(214, 176, 106, 0.7) 0 1.7px, transparent 2.7px),
+    radial-gradient(circle at 63% 97%, rgba(244, 224, 180, 0.84) 0 2.8px, transparent 3.8px),
+    radial-gradient(circle at 81% 95%, rgba(196, 84, 62, 0.6) 0 1.8px, transparent 2.8px),
+    radial-gradient(circle at 16% 72%, rgba(214, 176, 106, 0.55) 0 1.5px, transparent 2.4px),
+    radial-gradient(circle at 84% 68%, rgba(244, 224, 180, 0.6) 0 1.8px, transparent 2.8px),
+    radial-gradient(9px 5px at 8% 28%, rgba(232, 196, 130, 0.2), transparent 72%),
+    radial-gradient(11px 6px at 92% 24%, rgba(232, 196, 130, 0.18), transparent 72%),
+    radial-gradient(8px 4px at 5% 76%, rgba(232, 196, 130, 0.16), transparent 72%),
+    radial-gradient(12px 6px at 95% 82%, rgba(232, 196, 130, 0.18), transparent 72%),
+    radial-gradient(10px 5px at 42% 97%, rgba(232, 196, 130, 0.14), transparent 72%),
+    radial-gradient(circle at 31% 22%, rgba(176, 138, 78, 0.45) 0 1.1px, transparent 2px),
+    radial-gradient(circle at 58% 18%, rgba(244, 224, 180, 0.4) 0 0.9px, transparent 1.8px),
+    radial-gradient(circle at 22% 48%, rgba(214, 176, 106, 0.42) 0 1.2px, transparent 2.1px),
+    radial-gradient(circle at 76% 44%, rgba(176, 138, 78, 0.4) 0 1px, transparent 1.9px),
+    radial-gradient(circle at 40% 66%, rgba(244, 224, 180, 0.38) 0 1.1px, transparent 2px),
+    radial-gradient(circle at 64% 74%, rgba(196, 84, 62, 0.32) 0 1px, transparent 1.9px),
+    radial-gradient(circle at 28% 86%, rgba(214, 176, 106, 0.46) 0 1.3px, transparent 2.2px),
+    radial-gradient(circle at 70% 88%, rgba(244, 224, 180, 0.42) 0 1.2px, transparent 2.1px);
+}
+.lacquer::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  width: min(1680px, 96vw);
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, transparent 70.4%, rgba(230, 201, 138, 0.28) 70.62%, transparent 70.9%),
+    radial-gradient(circle, transparent 73.1%, rgba(196, 69, 45, 0.42) 73.28%, transparent 73.5%),
+    radial-gradient(circle, transparent 73.85%, rgba(230, 201, 138, 0.72) 74.05%, transparent 74.38%),
+    radial-gradient(circle, transparent 79.5%, rgba(230, 201, 138, 0.22) 79.68%, transparent 79.95%),
+    radial-gradient(circle, transparent 86.2%, rgba(230, 201, 138, 0.38) 86.38%, transparent 86.65%);
+}
+.lacquer-edge {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 8px;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='8' viewBox='0 0 32 8'><path d='M0 6.5h5V1.5h4v5h4V1.5h4v5h4V1.5h4v5h7' fill='none' stroke='%23e6c98a' stroke-width='0.8' opacity='0.8'/><path d='M0 7.4h32' stroke='%238e2c1c' stroke-width='0.6' opacity='0.7'/></svg>");
+  background-repeat: repeat-x;
+  background-size: 32px 8px;
+}
+.lacquer-edge-top { top: 0; }
+.lacquer-edge-bottom { bottom: 0; transform: scaleY(-1); }
+.corner {
+  display: none;
+  position: absolute;
+  width: 42px;
+  height: 42px;
+  font-style: normal;
+}
+.corner::before,
+.corner::after {
+  content: "";
+  position: absolute;
+  border-style: solid;
+  border-color: rgba(230, 201, 138, 0.8);
+}
+.corner::before { inset: 0; border-width: 1px 0 0 1px; }
+.corner::after {
+  inset: 6px;
+  border-width: 1px 0 0 1px;
+  border-color: rgba(196, 69, 45, 0.75);
+}
+.corner b {
+  position: absolute;
+  top: -3px;
+  left: -3px;
+  width: 5px;
+  height: 5px;
+  background: rgba(230, 201, 138, 0.92);
+  transform: rotate(45deg);
+}
+.corner-tl { top: 16px; left: 16px; }
+.corner-tr { top: 16px; right: 16px; transform: scaleX(-1); }
+.corner-bl { bottom: 16px; left: 16px; transform: scaleY(-1); }
+.corner-br { bottom: 16px; right: 16px; transform: scale(-1); }
+.lacquer-rail {
+  display: none;
+  position: absolute;
+  top: 86px;
+  bottom: 86px;
+  width: 11px;
+  font-style: normal;
+  background:
+    linear-gradient(45deg, transparent 42%, rgba(230, 201, 138, 0.9) 42% 58%, transparent 58%) 50% 16% / 6px 6px no-repeat,
+    linear-gradient(45deg, transparent 42%, rgba(230, 201, 138, 0.9) 42% 58%, transparent 58%) 50% 50% / 6px 6px no-repeat,
+    linear-gradient(45deg, transparent 42%, rgba(230, 201, 138, 0.9) 42% 58%, transparent 58%) 50% 84% / 6px 6px no-repeat;
+}
+.lacquer-rail::before,
+.lacquer-rail::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+}
+.lacquer-rail::before {
+  left: 0;
+  background: linear-gradient(to bottom, transparent, rgba(230, 201, 138, 0.7) 10%, rgba(230, 201, 138, 0.7) 90%, transparent);
+}
+.lacquer-rail::after {
+  right: 0;
+  background: linear-gradient(to bottom, transparent, rgba(196, 69, 45, 0.65) 14%, rgba(196, 69, 45, 0.65) 86%, transparent);
+}
+.lacquer-rail-l { left: 26px; }
+.lacquer-rail-r { right: 26px; }
+.lacquer-foot {
+  display: none;
+  position: absolute;
+  left: 50%;
+  bottom: 34px;
+  transform: translateX(-50%);
+  align-items: center;
+  gap: 14px;
+}
+.lacquer-rule {
+  position: relative;
+  width: clamp(64px, 11vw, 168px);
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(230, 201, 138, 0.8), transparent);
+}
+.lacquer-rule::after {
+  content: "";
+  position: absolute;
+  top: -3px;
+  width: 5px;
+  height: 5px;
+  background: rgba(230, 201, 138, 0.9);
+  transform: rotate(45deg);
+}
+.lacquer-rule:first-child::after { right: 0; }
+.lacquer-rule:last-child::after { left: 0; }
+.lacquer-seal {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  color: rgba(243, 214, 196, 0.92);
+  font-size: 22px;
+  line-height: 1;
+  letter-spacing: 0;
+  border: 1px solid rgba(196, 69, 45, 0.92);
+  box-shadow: inset 0 0 0 4px rgba(196, 69, 45, 0.38);
+  transform: rotate(-7deg);
+}
+@media (min-width: 1320px) {
+  .corner, .lacquer-rail { display: block; }
+}
+@media (min-width: 1000px) {
+  body[data-view="play"] .corner,
+  body[data-view="play"] .lacquer-rail { display: block; }
+}
+@media (min-height: 1040px) {
+  .lacquer-foot { display: flex; }
 }
 p, h1, h2, h3 { margin: 0; font-weight: 400; }
 button, input, select { font: inherit; color: inherit; }
@@ -73,6 +254,7 @@ button { cursor: pointer; }
 .sheet {
   --pad: 32px;
   position: relative;
+  z-index: 1;
   max-width: 1080px;
   margin: 0 auto;
   padding: 32px var(--pad) 36px calc(var(--gutter) + 26px);
@@ -731,6 +913,21 @@ legend, .eyebrow {
 </style>
 </head>
 <body data-view="home">
+<div class="lacquer" aria-hidden="true">
+  <div class="lacquer-edge lacquer-edge-top"></div>
+  <div class="lacquer-edge lacquer-edge-bottom"></div>
+  <i class="corner corner-tl"><b></b></i>
+  <i class="corner corner-tr"><b></b></i>
+  <i class="corner corner-bl"><b></b></i>
+  <i class="corner corner-br"><b></b></i>
+  <i class="lacquer-rail lacquer-rail-l"></i>
+  <i class="lacquer-rail lacquer-rail-r"></i>
+  <div class="lacquer-foot">
+    <span class="lacquer-rule"></span>
+    <span class="lacquer-seal">案</span>
+    <span class="lacquer-rule"></span>
+  </div>
+</div>
 <main class="sheet">
   <noscript><p class="noscript">打开 JavaScript 后才能计时，并把最好成绩留在这台浏览器里。</p></noscript>
 
