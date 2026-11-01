@@ -759,8 +759,8 @@ legend, .eyebrow {
             </label>
             <label class="choice">
               <input type="radio" name="play" value="idle">
-              <span class="choice-name">两秒重排</span>
-              <span class="choice-hint">两秒没点中就整盘重排。点中之前可以连着换。</span>
+              <span class="choice-name">一秒重排</span>
+              <span class="choice-hint">一秒没点中就整盘重排。点中之前可以连着换。</span>
             </label>
           </div>
         </fieldset>
@@ -1086,7 +1086,7 @@ legend, .eyebrow {
   }
 
   function describe(cfg) {
-    const names = { classic: "标准方格", reshuffle: "每点重排", spin: "匀速旋转", idle: "两秒重排" };
+    const names = { classic: "标准方格", reshuffle: "每点重排", spin: "匀速旋转", idle: "一秒重排" };
     const play = names[cfg.play] || "标准方格";
     const timing = cfg.timing === "relaxed" ? "轻松计时" : "标准计时";
     const reveal = cfg.reveal === "fade" ? "点后变淡" : "点后可见";
@@ -1617,7 +1617,7 @@ legend, .eyebrow {
     session.spinRaf = requestAnimationFrame(spinLoop);
   }
 
-  const IDLE_MS = 2000;
+  const IDLE_MS = 1000;
 
   function clearIdle() {
     if (!session || !session.idleTimer) return;
@@ -1734,7 +1734,7 @@ legend, .eyebrow {
     show("play");
     play.focus();
     const pace = cfg.play === "spin" ? spinPhrase(cfg.spin) + "。" : "";
-    const idleLead = cfg.play === "idle" ? "两秒没点中就会重排。" : "";
+    const idleLead = cfg.play === "idle" ? "一秒没点中就会重排。" : "";
     if (cfg.timing === "standard") {
       requestAnimationFrame(function () {
         requestAnimationFrame(function () {
