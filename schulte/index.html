@@ -755,12 +755,12 @@ legend, .eyebrow {
             <label class="choice">
               <input type="radio" name="play" value="spin">
               <span class="choice-name">匀速旋转</span>
-              <span class="choice-hint">整盘连数字一起匀速转动。快慢和方向每局随机，最慢约 36 秒一圈，最快 2 秒一圈。</span>
+              <span class="choice-hint">整盘连数字一起匀速转动，一会儿顺时针，一会儿逆时针。快慢每局随机，最慢约 36 秒一圈，最快 2 秒一圈。</span>
             </label>
             <label class="choice">
               <input type="radio" name="play" value="idle">
               <span class="choice-name">一秒重排</span>
-              <span class="choice-hint">一秒没点中就整盘重排。点中之前可以连着换。</span>
+              <span class="choice-hint">一秒没点中就整盘重排。轻松模式下，点中 1 之后才开始计时重排。</span>
             </label>
           </div>
         </fieldset>
@@ -1095,11 +1095,10 @@ legend, .eyebrow {
 
   function spinPhrase(spin) {
     if (!spin || typeof spin.dps !== "number" || !Number.isFinite(spin.dps) || spin.dps <= 0) return "";
-    const dir = spin.dir < 0 ? "逆时针" : "顺时针";
     const period = 360 / spin.dps;
-    if (period >= 1.5) return dir + "，约 " + String(Math.max(1, Math.round(period))) + " 秒一圈";
+    if (period >= 1.5) return "来回转向，约 " + String(Math.max(1, Math.round(period))) + " 秒一圈";
     const rev = spin.dps / 360;
-    return dir + "，约每秒 " + (rev >= 10 ? rev.toFixed(0) : rev.toFixed(1)) + " 圈";
+    return "来回转向，约每秒 " + (rev >= 10 ? rev.toFixed(0) : rev.toFixed(1)) + " 圈";
   }
 
   function withSpin(text, spin) {
@@ -1610,10 +1609,23 @@ legend, .eyebrow {
     session.spinRaf = 0;
   }
 
+  function nextSpinHold(dps) {
+    const turn = 360 / dps;
+    const turns = 0.55 + Math.random() * 0.55;
+    return Math.min(3500, Math.max(1200, turns * turn * 1000));
+  }
+
   function spinLoop(now) {
     if (!session || !session.spin || session.finished) return;
-    const deg = session.spin.dir * session.spin.dps * ((now - session.spinT0) / 1000);
-    board.style.transform = "rotate(" + deg.toFixed(2) + "deg)";
+    const last = session.spinLast || now;
+    const dt = Math.max(0, (now - last) / 1000);
+    session.spinLast = now;
+    session.spinAngle += session.spinDir * session.spin.dps * dt;
+    board.style.transform = "rotate(" + session.spinAngle.toFixed(2) + "deg)";
+    if (now >= session.spinFlipAt) {
+      session.spinDir = session.spinDir < 0 ? 1 : -1;
+      session.spinFlipAt = now + nextSpinHold(session.spin.dps);
+    }
     session.spinRaf = requestAnimationFrame(spinLoop);
   }
 
@@ -1628,6 +1640,7 @@ legend, .eyebrow {
   function armIdle() {
     clearIdle();
     if (!session || session.finished || session.config.play !== "idle") return;
+    if (session.config.timing === "relaxed" && !session.running) return;
     const seq = session.seq;
     session.idleTimer = setTimeout(function () {
       if (!session || session.seq !== seq || session.finished || session.config.play !== "idle") return;
@@ -1688,7 +1701,11 @@ legend, .eyebrow {
       markDone(btn);
     }
     if (session.config.play === "idle") armIdle();
-    say(startedNow ? "计时开始，下一个 " + session.expected : "下一个 " + session.expected);
+    if (startedNow && session.config.play === "idle") {
+      say("计时开始，一秒没点中就会重排。下一个 " + session.expected);
+    } else {
+      say(startedNow ? "计时开始，下一个 " + session.expected : "下一个 " + session.expected);
+    }
     paintHud();
   }
 
@@ -1715,15 +1732,22 @@ legend, .eyebrow {
       raf: 0,
       spin: cfg.spin || null,
       spinT0: performance.now(),
+      spinDir: cfg.spin ? (cfg.spin.dir < 0 ? -1 : 1) : 1,
+      spinAngle: 0,
+      spinLast: 0,
+      spinFlipAt: 0,
       spinRaf: 0,
       idleTimer: 0,
     };
     buildBoard(session.order);
     if (cfg.play === "spin") {
+      const spun = performance.now();
+      session.spinLast = spun;
+      session.spinFlipAt = spun + nextSpinHold(cfg.spin.dps);
       board.setAttribute("aria-label", cfg.size + " 乘 " + cfg.size + " 的旋转舒尔特方格");
       session.spinRaf = requestAnimationFrame(spinLoop);
     }
-    if (cfg.play === "idle") armIdle();
+    if (cfg.play === "idle" && cfg.timing !== "relaxed") armIdle();
     result.hidden = true;
     quitBar.hidden = true;
     quit.hidden = false;
@@ -1734,8 +1758,8 @@ legend, .eyebrow {
     show("play");
     play.focus();
     const pace = cfg.play === "spin" ? spinPhrase(cfg.spin) + "。" : "";
-    const idleLead = cfg.play === "idle" ? "一秒没点中就会重排。" : "";
     if (cfg.timing === "standard") {
+      const idleLead = cfg.play === "idle" ? "一秒没点中就会重排。" : "";
       requestAnimationFrame(function () {
         requestAnimationFrame(function () {
           if (!session || session.seq !== seq || session.finished || session.running) return;
@@ -1743,8 +1767,10 @@ legend, .eyebrow {
           say(pace + idleLead + "方格已出现，计时开始。");
         });
       });
+    } else if (cfg.play === "idle") {
+      say(pace + "找出数字 1。点中之后开始计时，一秒没点中就会重排。");
     } else {
-      say(pace + idleLead + "找出数字 1。点中之后开始计时。");
+      say(pace + "找出数字 1。点中之后开始计时。");
     }
   }
 
