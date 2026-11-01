@@ -268,6 +268,16 @@ button { cursor: pointer; }
   box-shadow: var(--shadow);
 }
 body[data-view="play"] .sheet { max-width: 780px; }
+body.is-fitted {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100dvh;
+  min-height: 100dvh;
+  padding: 8px;
+  overflow: hidden;
+}
+body.is-fitted .sheet { margin: 0; flex: none; }
 .sheet::after {
   content: "";
   position: absolute;
@@ -727,7 +737,7 @@ legend, .eyebrow {
   color: var(--ink);
   font-family: var(--mono);
   font-variant-numeric: tabular-nums;
-  font-size: clamp(15px, calc(46cqi / var(--n)), 280px);
+  font-size: clamp(11px, calc(40cqi / var(--n)), 68px);
   line-height: 1;
   cursor: pointer;
   display: grid;
@@ -878,168 +888,6 @@ legend, .eyebrow {
 }
 @media (max-width: 420px) {
   .pair, .plays { grid-template-columns: 1fr; }
-}
-body[data-view="play"] {
-  padding: 0;
-  height: 100dvh;
-  overflow: hidden;
-}
-body[data-view="play"] .sheet {
-  max-width: none;
-  width: 100%;
-  height: 100dvh;
-  margin: 0;
-  padding: 8px 10px 10px;
-  display: flex;
-  flex-direction: column;
-  box-shadow: none;
-  background: var(--paper);
-}
-body[data-view="play"] #play {
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-body[data-view="play"] .play-bar {
-  flex: none;
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  gap: 6px 16px;
-  align-items: center;
-}
-body[data-view="play"] .play-side-r {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 14px;
-}
-body[data-view="play"] .play-mid { min-width: 0; text-align: center; }
-body[data-view="play"] .play-config {
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-body[data-view="play"] .clock { font-size: clamp(28px, 4.2vw, 48px); }
-body[data-view="play"] .next-num { font-size: clamp(26px, 3.6vw, 44px); }
-body[data-view="play"] .hud { margin: 0; }
-body[data-view="play"] .hud-note { margin-top: 2px; min-height: 1.3em; }
-body[data-view="play"] .meter { margin: 0; flex: none; }
-body[data-view="play"] .quit-bar { padding: 0; flex: 1 0 100%; }
-body[data-view="play"] .result {
-  margin: 0;
-  padding: 8px 0 4px;
-  flex: none;
-}
-body[data-view="play"] .stage {
-  flex: 1;
-  width: 100%;
-  max-width: none;
-  min-height: 0;
-  aspect-ratio: auto;
-  container-type: size;
-  display: grid;
-  place-items: center;
-}
-body[data-view="play"] .board {
-  width: min(100cqw, 100cqh);
-  height: min(100cqw, 100cqh);
-  aspect-ratio: auto;
-}
-body[data-view="play"] .stage.is-spin .board {
-  width: min(69cqw, 69cqh);
-  height: min(69cqh, 69cqw);
-}
-@media (min-width: 840px) and (min-aspect-ratio: 5/4) {
-  body[data-view="play"] .sheet { padding: 4px; }
-  body[data-view="play"] #play {
-    position: relative;
-    container-type: size;
-    gap: 0;
-  }
-  body[data-view="play"] .stage { position: absolute; inset: 0; z-index: 1; }
-  body[data-view="play"] .play-bar {
-    position: absolute;
-    inset: 0;
-    z-index: 2;
-    display: block;
-    pointer-events: none;
-  }
-  body[data-view="play"] .play-side-l,
-  body[data-view="play"] .play-mid {
-    position: absolute;
-    left: 0;
-    width: calc((100cqw - min(100cqw, 100cqh)) / 2 - 8px);
-    box-sizing: border-box;
-    text-align: right;
-    padding-right: 14px;
-  }
-  body[data-view="play"] .play-side-l { top: 2px; }
-  body[data-view="play"] .play-side-l .clock-line { justify-content: flex-end; }
-  body[data-view="play"] .play-mid { top: 58px; }
-  body[data-view="play"] .meter {
-    position: absolute;
-    left: 12px;
-    bottom: 12px;
-    width: calc((100cqw - min(100cqw, 100cqh)) / 2 - 32px);
-    z-index: 2;
-  }
-  body[data-view="play"] .play-side-r {
-    position: absolute;
-    top: 2px;
-    right: 0;
-    width: calc((100cqw - min(100cqw, 100cqh)) / 2 - 8px);
-    box-sizing: border-box;
-    flex-direction: column;
-    align-items: flex-start;
-    justify-content: flex-start;
-    gap: 8px;
-    text-align: left;
-    padding-left: 14px;
-    pointer-events: none;
-  }
-  body[data-view="play"] .hud-next { text-align: left; }
-  body[data-view="play"] #next-label,
-  body[data-view="play"] #progress-count { white-space: nowrap; }
-  body[data-view="play"] .quit-bar {
-    position: static;
-    width: auto;
-    z-index: 3;
-    flex-wrap: wrap;
-    gap: 6px;
-    padding-left: 0;
-    pointer-events: auto;
-  }
-  body[data-view="play"] .play-side-r .btn,
-  body[data-view="play"] .quit-bar .btn,
-  body[data-view="play"] .result .btn { pointer-events: auto; }
-  body[data-view="play"] .clock { font-size: clamp(26px, 2.6vw, 56px); }
-  body[data-view="play"] .next-num { font-size: clamp(24px, 2.4vw, 52px); }
-  body[data-view="play"] .result {
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 3;
-    margin: 0;
-    padding: 10px 16px 12px;
-    background: var(--paper);
-    border-top: 1px solid var(--ink);
-  }
-  body[data-view="play"] #play:has(#result:not([hidden])) .stage { bottom: 248px; }
-}
-@media (max-width: 640px) {
-  body[data-view="play"] .sheet { padding: 6px 6px 8px; }
-  body[data-view="play"] .play-bar {
-    grid-template-columns: 1fr auto;
-    align-items: start;
-  }
-  body[data-view="play"] .play-mid { grid-column: 1 / -1; grid-row: 2; text-align: left; }
-  body[data-view="play"] .clock { font-size: 32px; }
-  body[data-view="play"] .next-num { font-size: 28px; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
@@ -1239,32 +1087,31 @@ body[data-view="play"] .stage.is-spin .board {
   </div>
 
   <section id="play" aria-label="玩法区" hidden tabindex="-1">
-    <div class="play-bar">
-      <div class="play-side play-side-l">
+    <div class="play-top">
+      <p id="play-config" class="play-config"></p>
+      <button type="button" class="btn ghost" id="quit">放弃</button>
+    </div>
+    <div id="quit-bar" class="quit-bar" hidden>
+      <span>离开后这一局不记成绩。</span>
+      <button type="button" class="btn ghost" id="quit-yes">离开</button>
+      <button type="button" class="btn ghost" id="quit-no">继续</button>
+    </div>
+
+    <div class="hud">
+      <div>
         <div class="clock-line">
           <span id="clock" class="clock is-frozen">00.00</span>
           <span class="unit">秒</span>
         </div>
         <p id="clock-caption" class="caption"><span id="clock-dot" class="dot" aria-hidden="true"></span><span id="clock-caption-text">准备</span></p>
       </div>
-      <div class="play-mid">
-        <p id="play-config" class="play-config"></p>
-        <p id="hud-note" class="hud-note" aria-live="polite"></p>
-      </div>
-      <div class="play-side play-side-r">
-        <div class="hud-next">
-          <p id="next-label" class="caption">下一个</p>
-          <p id="next-num" class="next-num">1</p>
-          <p id="progress-count" class="caption">0 / 25</p>
-        </div>
-        <button type="button" class="btn ghost" id="quit">放弃</button>
-        <div id="quit-bar" class="quit-bar" hidden>
-          <span>离开后这一局不记成绩。</span>
-          <button type="button" class="btn ghost" id="quit-yes">离开</button>
-          <button type="button" class="btn ghost" id="quit-no">继续</button>
-        </div>
+      <div class="hud-next">
+        <p id="next-label" class="caption">下一个</p>
+        <p id="next-num" class="next-num">1</p>
+        <p id="progress-count" class="caption">0 / 25</p>
       </div>
     </div>
+    <p id="hud-note" class="hud-note" aria-live="polite"></p>
     <div class="meter" aria-hidden="true"><span id="progress-bar"></span></div>
 
     <div id="result" class="result" hidden>
@@ -1828,6 +1675,55 @@ body[data-view="play"] .stage.is-spin .board {
     home.hidden = view !== "home";
     play.hidden = view !== "play";
     window.scrollTo(0, 0);
+    fitSheet();
+  }
+
+  let fitLock = false;
+  let fitNatural = { w: 0, h: 0 };
+  function fitSheet() {
+    if (fitLock) return;
+    const sheetEl = document.querySelector(".sheet");
+    if (!sheetEl) return;
+    fitLock = true;
+    const zoomNow = parseFloat(sheetEl.style.zoom) || 1;
+    const seen = sheetEl.getBoundingClientRect();
+    const seenW = seen.width / zoomNow;
+    const seenH = seen.height / zoomNow;
+    if (fitNatural.w && Math.abs(seenW - fitNatural.w) < 2 && Math.abs(seenH - fitNatural.h) < 2) {
+      fitLock = false;
+      return;
+    }
+    sheetEl.style.zoom = "1";
+    sheetEl.style.width = "";
+    document.body.classList.remove("is-fitted");
+    let box = sheetEl.getBoundingClientRect();
+    const margin = 8;
+    const availW = window.innerWidth - margin * 2;
+    const availH = window.innerHeight - margin * 2;
+    let scale = Math.min(availW / box.width, availH / box.height);
+    if (!Number.isFinite(scale) || scale < 1.02) {
+      scale = 1;
+      fitNatural = { w: box.width, h: box.height };
+      sheetEl.style.zoom = "1";
+      fitLock = false;
+      return;
+    }
+    const lockW = box.width;
+    sheetEl.style.width = lockW + "px";
+    document.body.classList.add("is-fitted");
+    box = sheetEl.getBoundingClientRect();
+    scale = Math.min(availW / box.width, availH / box.height);
+    if (!Number.isFinite(scale) || scale < 1.02) {
+      scale = 1;
+      sheetEl.style.width = "";
+      document.body.classList.remove("is-fitted");
+    } else {
+      scale = Math.floor(scale * 100) / 100;
+    }
+    sheetEl.style.zoom = String(scale);
+    const fitted = sheetEl.getBoundingClientRect();
+    fitNatural = { w: fitted.width / scale, h: fitted.height / scale };
+    fitLock = false;
   }
 
   function say(text, alert) {
@@ -1969,6 +1865,7 @@ body[data-view="play"] .stage.is-spin .board {
     resultExtra.textContent = withSpin("第 " + summary.runs + " 次完成 · " + describe(session.config), session.config.spin);
     quit.hidden = true;
     resultTitle.focus();
+    fitSheet();
   }
 
   function stopSpinLoop() {
@@ -2141,6 +2038,7 @@ body[data-view="play"] .stage.is-spin .board {
     }
     quitBar.hidden = false;
     quitYes.focus();
+    fitSheet();
   }
 
   form.addEventListener("submit", function (event) {
@@ -2211,6 +2109,18 @@ body[data-view="play"] .stage.is-spin .board {
 
   applyLast();
   renderRecords();
+  fitSheet();
+  window.addEventListener("resize", function () {
+    fitNatural = { w: 0, h: 0 };
+    fitSheet();
+  });
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () {
+    fitNatural = { w: 0, h: 0 };
+    fitSheet();
+  });
+  const fitWatch = new ResizeObserver(function () { fitSheet(); });
+  fitWatch.observe(home);
+  fitWatch.observe(play);
 })();
 </script>
 </body>
